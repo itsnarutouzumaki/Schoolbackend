@@ -13,6 +13,8 @@ export async function connectDatabase(): Promise<void> {
     });
     console.info('MongoDB connected.');
   } catch (error) {
-    console.error('Initial MongoDB connection failed; the API will continue and readiness will report unavailable.', error);
+    console.error('Initial MongoDB connection failed; readiness will report unavailable.', {
+      errorName: error instanceof Error ? error.name : typeof error,
+    });
   }
 }

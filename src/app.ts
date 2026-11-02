@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import cors from 'cors';
-import express, { type ErrorRequestHandler } from 'express';
+import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import swaggerUi from 'swagger-ui-express';
-import { corsOrigins, env } from './config/env.js';
-import { openApiDocument } from './docs/openapi.js';
-import { healthRouter } from './routes/health.js';
+import { corsOrigins, env } from './config/index.js';
+import { errorHandler, notFoundHandler } from './middlewares/index.js';
+import { ApiError } from './shared/index.js';
+import { registerRoutes } from './routes/index.js';
 
 export const app = express();
 
@@ -25,48 +25,27 @@ app.use(cors({
       callback(null, true);
       return;
     }
-    callback(new Error('Origin is not allowed by CORS.'));
+    callback(new ApiError(403, 'ORIGIN_NOT_ALLOWED', 'This origin is not allowed.'));
   },
 }));
-app.use(express.json({ limit: '1mb' }));
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 300,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  handler: (_request, response) => {
+    response.status(429).json({
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Too many requests. Please try again later.',
+        requestId: response.locals.requestId,
+        retryable: true,
+      },
+    });
+  },
 }));
 
-app.use('/health', healthRouter);
-app.get('/api/v1/openapi.json', (_request, response) => {
-  response.json(openApiDocument);
-});
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, {
-  explorer: false,
-  customSiteTitle: 'Greenwood School API',
-}));
-
-app.use((_request, response) => {
-  response.status(404).json({
-    error: {
-      code: 'ROUTE_NOT_FOUND',
-      message: 'The requested API route does not exist.',
-      requestId: response.locals.requestId,
-      retryable: false,
-    },
-  });
-});
-
-const errorHandler: ErrorRequestHandler = (error: unknown, _request, response, _next) => {
-  console.error('Unhandled API request error:', error);
-  response.status(500).json({
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'The server could not complete the request.',
-      requestId: response.locals.requestId,
-      retryable: true,
-    },
-  });
-};
-
+registerRoutes(app);
+app.use(notFoundHandler);
 app.use(errorHandler);

@@ -1,18 +1,8 @@
 import { Router } from 'express';
-import mongoose from 'mongoose';
-import { env } from '../config/env.js';
+import { controllerHandler } from '../shared/http/index.js';
+import { getLiveness, getReadiness } from './health.controller.js';
 
 export const healthRouter = Router();
 
-healthRouter.get('/live', (_request, response) => {
-  response.status(200).json({ status: 'live' });
-});
-
-healthRouter.get('/ready', (_request, response) => {
-  const isMongoReady = Boolean(env.MONGODB_URI) && mongoose.connection.readyState === 1;
-
-  response.status(isMongoReady ? 200 : 503).json({
-    status: isMongoReady ? 'ready' : 'not-ready',
-    dependencies: { mongodb: isMongoReady ? 'connected' : 'unavailable' },
-  });
-});
+healthRouter.get('/live', controllerHandler(getLiveness));
+healthRouter.get('/ready', controllerHandler(getReadiness));
