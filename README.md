@@ -99,3 +99,5 @@ Implement business APIs as feature-based modules in a modular monolith. Each fea
 ## Included foundations
 
 Express 5, MongoDB through Mongoose, environment validation with Zod, request logging with Morgan, Helmet security headers, CORS, general and auth-specific rate limiting, Nodemailer for future email workflows, Swagger UI/OpenAPI docs, and feature-based Mongoose models. MongoDB must run as a replica set for guardian signup, password-reset, and password-change transactions.
+
+# Thank You
