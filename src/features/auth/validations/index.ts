@@ -1,4 +1,6 @@
 export {
+  guardianCurrentPasswordChangeSchema,
+  guardianLoginSchema,
   loginSchema,
   logoutSchema,
   passwordChangeSchema,
@@ -9,6 +11,8 @@ export {
   signupSchema,
 } from './auth.validation.js';
 export type {
+  GuardianCurrentPasswordChangeInput,
+  GuardianLoginInput,
   LoginInput,
   LogoutInput,
   PasswordChangeInput,

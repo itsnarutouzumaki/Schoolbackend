@@ -6,6 +6,9 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   MONGODB_URI: z.string().url().optional(),
   CORS_ORIGINS: z.string().default(''),
+  GCS_BUCKET_NAME: z.string().min(3).optional(),
+  GCS_PROJECT_ID: z.string().min(1).optional(),
+  GCS_SIGNED_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
   JWT_SECRET: z.string()
     .refine(secret => Buffer.byteLength(secret, 'utf8') >= 32, 'JWT_SECRET must be at least 32 bytes.')
     .optional(),
@@ -25,6 +28,13 @@ const envSchema = z.object({
       code: 'custom',
       path: ['OTP_HMAC_SECRET'],
       message: 'OTP_HMAC_SECRET is required in production.',
+    });
+  }
+  if (config.NODE_ENV === 'production' && !config.GCS_BUCKET_NAME) {
+    context.addIssue({
+      code: 'custom',
+      path: ['GCS_BUCKET_NAME'],
+      message: 'GCS_BUCKET_NAME is required in production.',
     });
   }
 });

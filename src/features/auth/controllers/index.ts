@@ -1,7 +1,8 @@
 export {
+  changeGuardianPasswordController,
   changePasswordController,
   confirmPasswordResetController,
-  loginController,
+  guardianLoginController,
   logoutController,
   refreshController,
   requestPasswordResetController,

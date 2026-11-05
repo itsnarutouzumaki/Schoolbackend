@@ -1,12 +1,14 @@
 import rateLimit from 'express-rate-limit';
 import { Router } from 'express';
 import { authenticateMiddleware } from '../../../middlewares/authenticate/index.js';
+import { requireGuardianMiddleware } from '../../../middlewares/require-guardian/index.js';
 import { controllerHandler } from '../../../shared/http/index.js';
 import { validateBody } from '../../../shared/validation/index.js';
 import {
   changePasswordController,
+  changeGuardianPasswordController,
   confirmPasswordResetController,
-  loginController,
+  guardianLoginController,
   logoutController,
   refreshController,
   requestPasswordResetController,
@@ -14,7 +16,8 @@ import {
   signupController,
 } from '../controllers/index.js';
 import {
-  loginSchema,
+  guardianLoginSchema,
+  guardianCurrentPasswordChangeSchema,
   logoutSchema,
   passwordChangeSchema,
   passwordResetConfirmationSchema,
@@ -63,17 +66,29 @@ const passwordResetRateLimit = rateLimit({
   handler: rateLimitHandler,
 });
 
-authRouter.post('/login', loginRateLimit, validateBody(loginSchema), controllerHandler(loginController));
+authRouter.post(
+  '/login',
+  loginRateLimit,
+  validateBody(guardianLoginSchema),
+  controllerHandler(guardianLoginController),
+);
+authRouter.post(
+  '/password/change-current',
+  authenticateMiddleware,
+  requireGuardianMiddleware,
+  validateBody(guardianCurrentPasswordChangeSchema),
+  controllerHandler(changeGuardianPasswordController),
+);
 authRouter.post('/password/change', validateBody(passwordChangeSchema), controllerHandler(changePasswordController));
 authRouter.post('/refresh', validateBody(refreshSchema), controllerHandler(refreshController));
 authRouter.post('/logout', authenticateMiddleware, validateBody(logoutSchema), controllerHandler(logoutController));
 authRouter.post(
-  '/guardian-signups/verification-codes',
+  '/signup/verification-codes',
   verificationCodeRateLimit,
   validateBody(requestSignupCodeSchema),
   controllerHandler(requestSignupCodeController),
 );
-authRouter.post('/guardian-signups', validateBody(signupSchema), controllerHandler(signupController));
+authRouter.post('/signup', validateBody(signupSchema), controllerHandler(signupController));
 authRouter.post(
   '/password-reset/requests',
   passwordResetRateLimit,

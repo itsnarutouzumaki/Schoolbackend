@@ -38,5 +38,7 @@ export type Guardian = {
   userId: Types.ObjectId;
   fullName: string;
   photoFileId?: Types.ObjectId;
+  currentAddress?: { line1?: string; line2?: string; city?: string; state?: string; postalCode?: string; countryCode?: string };
+  relationshipDetails?: string;
 };
 export const GuardianModel = getTypedModel<Guardian>('Guardian', guardianSchema);

@@ -4,6 +4,7 @@ import type { ApiSuccessResponse, RequestLocals, TypedController } from '../../.
 import { requireAuthContext, requireTenantContext } from '../../../shared/http/index.js';
 import { ApiError } from '../../../shared/errors/index.js';
 import { changeRequiredPassword } from '../services/auth/change-password.js';
+import { changeGuardianPassword } from '../services/auth/change-guardian-password.js';
 import { confirmGuardianPasswordReset } from '../services/auth/confirm-password-reset.js';
 import { login } from '../services/auth/login.js';
 import { logout } from '../services/auth/logout.js';
@@ -12,7 +13,7 @@ import { registerGuardian } from '../services/auth/register-guardian.js';
 import { requestGuardianPasswordReset } from '../services/auth/request-password-reset.js';
 import { requestGuardianSignupCode } from '../services/auth/request-signup-code.js';
 import type {
-  LoginInput,
+  GuardianLoginInput,
   LogoutInput,
   PasswordChangeInput,
   PasswordResetConfirmationInput,
@@ -30,12 +31,16 @@ type Controller<TBody, TData> = TypedController<
   RequestLocals
 >;
 
-export const loginController: Controller<LoginInput, Awaited<ReturnType<typeof login>>> = async (
-  request,
-  response,
-) => {
+export const guardianLoginController: Controller<
+  GuardianLoginInput,
+  Awaited<ReturnType<typeof login>>
+> = async (request, response) => {
   const tenant = requireTenantContext(response.locals);
-  const result = await login({ ...request.body, schoolId: tenant.schoolId });
+  const result = await login({
+    ...request.body,
+    appAudience: 'guardian',
+    schoolId: tenant.schoolId,
+  });
   response.status(200).json({ data: result });
 };
 
@@ -112,6 +117,22 @@ export const changePasswordController: TypedController<
     schoolId: tenant.schoolId,
     token: authorization.slice('Bearer '.length).trim(),
     newPassword: request.body.newPassword,
+  });
+  response.status(204).end();
+};
+
+export const changeGuardianPasswordController: TypedController<
+  ParamsDictionary,
+  ApiSuccessResponse<never>,
+  { currentPassword: string; newPassword: string },
+  ParsedQs,
+  RequestLocals
+> = async (request, response) => {
+  const auth = requireAuthContext(response.locals);
+  await changeGuardianPassword({
+    schoolId: auth.schoolId,
+    userId: auth.userId,
+    ...request.body,
   });
   response.status(204).end();
 };

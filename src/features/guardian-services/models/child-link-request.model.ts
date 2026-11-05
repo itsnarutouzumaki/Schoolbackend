@@ -5,6 +5,7 @@ const childLinkRequestSchema = new Schema({
   schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
   guardianId: { type: Schema.Types.ObjectId, ref: 'Guardian', required: true },
   proposedStudentNumber: { type: String, required: true, trim: true },
+  proposedStudentName: { type: String, trim: true, maxlength: 120, default: undefined },
   relationship: { type: String, required: true, trim: true },
   status: {
     type: String,

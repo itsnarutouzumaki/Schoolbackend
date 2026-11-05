@@ -53,6 +53,14 @@ export type School = {
   name: string;
   timezone: string;
   currentAcademicYearId?: Types.ObjectId;
+  branding?: {
+    primaryColor?: string;
+    accentColor?: string;
+    logoFileId?: Types.ObjectId;
+    contactEmail?: string;
+    contactPhone?: string;
+    website?: string;
+  };
   fileRetentionDays: number;
   dataRevision: number;
 };

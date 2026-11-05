@@ -10,6 +10,7 @@ const {
   JWT_ISSUER,
   REFRESH_SESSION_TTL_DAYS,
   createRefreshToken,
+  guardianLoginSchema,
   hashPassword,
   issueAccessToken,
   loginSchema,
@@ -119,6 +120,16 @@ test('refresh credentials are opaque, stored as a hash, and expire in 30 days', 
 });
 
 test('auth request schemas enforce bcrypt byte limits and apply logout defaults', () => {
+  const guardianCredentials = {
+    phone: '+919876543210',
+    password: 'valid-password',
+  };
+  assert.equal(guardianLoginSchema.safeParse(guardianCredentials).success, true);
+  assert.equal(
+    guardianLoginSchema.safeParse({ ...guardianCredentials, appAudience: 'teacher' }).success,
+    false,
+  );
+
   const validLogin = {
     appAudience: 'guardian',
     phone: '+919876543210',

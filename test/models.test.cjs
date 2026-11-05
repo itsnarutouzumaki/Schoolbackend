@@ -53,18 +53,17 @@ test('school file retention defaults to 30 whole days and supports school overri
   ));
 });
 
-test('file retention duration is required as a whole-number snapshot', async () => {
+test('GCS file records require an integer retention duration', async () => {
   const file = new models.FileRecordModel({
     schoolId: new mongoose.Types.ObjectId(),
     fileCode: 'test-file',
     ownerUserId: new mongoose.Types.ObjectId(),
     purpose: 'answer-copy',
-    downloadUrl: '/api/v1/files/test-file/download',
+    storageProvider: 'gcs',
     storageRef: 'test/object',
     originalFileName: 'answer.pdf',
     contentType: 'application/pdf',
     sizeBytes: 100,
-    checksumSha256: 'a'.repeat(64),
     retentionDays: 30,
   });
 

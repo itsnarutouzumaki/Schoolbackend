@@ -33,8 +33,30 @@ test('health and OpenAPI endpoints are registered centrally', async () => {
   assert.equal(openapi.status, 200);
   const specification = await openapi.json();
   assert.equal(specification.openapi, '3.0.3');
-  assert.ok(specification.paths['/api/v1/auth/login']);
-  assert.ok(specification.paths['/api/v1/auth/password-reset/confirmations']);
+  assert.ok(specification.paths['/api/v1/guardian/auth/login']);
+  assert.ok(specification.paths['/api/v1/guardian/auth/password-reset/confirmations']);
+  assert.ok(specification.paths['/api/v1/guardian/auth/password/change-current']);
+  assert.ok(specification.paths['/api/v1/guardian/bootstrap']);
+  assert.ok(specification.paths['/api/v1/guardian/me']);
+  assert.ok(specification.paths['/api/v1/guardian/me/children']);
+  assert.ok(specification.paths['/api/v1/guardian/child-link-requests']);
+  assert.ok(specification.paths['/api/v1/guardian/leave-requests']);
+  assert.ok(specification.paths['/api/v1/guardian/complaints']);
+  assert.ok(specification.paths['/api/v1/guardian/notifications']);
+  assert.ok(specification.paths['/api/v1/guardian/notifications/read-all']);
+  assert.ok(specification.paths['/api/v1/guardian/notifications/{eventId}/read']);
+  assert.ok(specification.paths['/api/v1/guardian/files/upload-intents']);
+  assert.ok(specification.paths['/api/v1/guardian/files/{fileId}/complete']);
+  assert.ok(specification.paths['/api/v1/guardian/files/{fileId}/download']);
+  assert.ok(specification.paths['/api/v1/guardian/child-link-requests'].post);
+  assert.ok(specification.paths['/api/v1/guardian/leave-requests'].post);
+  assert.ok(specification.paths['/api/v1/guardian/complaints'].post);
+  assert.ok(specification.paths['/api/v1/guardian/me'].patch);
+  assert.ok(specification.paths['/api/v1/guardian/children/{childId}/attendance']);
+  assert.ok(specification.paths['/api/v1/guardian/children/{childId}/results']);
+  assert.ok(specification.paths['/api/v1/guardian/children/{childId}/fees']);
+  assert.ok(specification.paths['/api/v1/guardian/children/{childId}/teachers']);
+  assert.equal(specification.paths['/api/v1/auth/guardian/login'], undefined);
 });
 
 test('school-scoped API routes reject missing and malformed tenant codes', async () => {
