@@ -3,8 +3,8 @@ import { ApiError } from '../../../../shared/errors/index.js';
 
 export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 export const REFRESH_SESSION_TTL_DAYS = 30;
-export const JWT_ISSUER = 'greenwood-school-api';
-export const JWT_AUDIENCE = 'greenwood-school-clients';
+export const JWT_ISSUER = 'school-management-api';
+export const JWT_AUDIENCE = 'school-management-clients';
 export const JWT_ALGORITHM = 'HS256' as const;
 export const PASSWORD_CHANGE_TOKEN_TTL_SECONDS = 10 * 60;
 

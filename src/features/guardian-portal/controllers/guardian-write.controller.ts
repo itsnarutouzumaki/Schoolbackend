@@ -36,7 +36,7 @@ const profileSchema = z.object({
   profilePhotoFileId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
 }).strict();
 const linkRequestSchema = z.object({
-  studentNumber: z.string().trim().min(1).max(80),
+  studentNumber: z.string().trim().min(1).max(7).regex(/^[a-z]{0,5}\d{1,2}$/i),
   studentName: z.string().trim().min(1).max(120).optional(),
   relationship: z.string().trim().min(1).max(80).default('Parent'),
 }).strict();

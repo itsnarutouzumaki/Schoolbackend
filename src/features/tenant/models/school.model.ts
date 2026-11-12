@@ -39,6 +39,13 @@ const schoolSchema = new Schema({
     website: { type: String, trim: true, default: undefined },
   },
   dataRevision: { type: Number, min: 0, default: 0, required: true },
+  studentNumberSequence: {
+    type: Number,
+    min: 0,
+    validate: Number.isInteger,
+    default: 0,
+    required: true,
+  },
 }, {
   ...tenantSchemaOptions,
   collection: 'schools',
@@ -63,5 +70,6 @@ export type School = {
   };
   fileRetentionDays: number;
   dataRevision: number;
+  studentNumberSequence: number;
 };
 export const SchoolModel = getTypedModel<School>('School', schoolSchema);

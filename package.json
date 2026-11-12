@@ -1,12 +1,13 @@
 {
-  "name": "greenwood-school-backend",
+  "name": "school-management-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Shared multi-school API for the Greenwood Parent and Teacher apps",
+  "description": "Generic multi-tenant school management API",
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts,json --exec tsx src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "clean": "node scripts/clean-dist.js",
+    "build": "npm run clean && tsc -p tsconfig.json",
     "test": "npm run build && node --test",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json"

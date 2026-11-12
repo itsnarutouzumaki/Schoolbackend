@@ -1,6 +1,12 @@
 import { Types } from 'mongoose';
 import { ApiError } from '../../../shared/errors/index.js';
-import { ChildLinkModel, GuardianModel, StudentModel } from '../../people/models/index.js';
+import {
+  ChildLinkModel,
+  compactStudentNumber,
+  GuardianModel,
+  normalizeStudentNumber,
+  StudentModel,
+} from '../../people/models/index.js';
 import { ChildLinkRequestModel } from '../models/index.js';
 
 type CreateChildLinkRequestInput = {
@@ -16,7 +22,7 @@ export async function createChildLinkRequest(input: CreateChildLinkRequestInput)
   if (!guardian) {
     throw new ApiError(403, 'GUARDIAN_PROFILE_UNAVAILABLE', 'The guardian profile is not available.');
   }
-  const studentNumber = input.studentNumber.trim().toUpperCase();
+  const studentNumber = normalizeStudentNumber(input.studentNumber);
   const student = await StudentModel.findOne().where({
     schoolId: input.schoolId,
     studentNumber,
@@ -51,7 +57,7 @@ export async function createChildLinkRequest(input: CreateChildLinkRequestInput)
   });
   return {
     id: request.id,
-    studentNumber: request.proposedStudentNumber,
+    studentNumber: compactStudentNumber(request.proposedStudentNumber),
     studentName: request.proposedStudentName,
     relationship: request.relationship,
     status: request.status,

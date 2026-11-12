@@ -1,4 +1,4 @@
-# Greenwood Shared School Backend
+# School Management Backend
 
 TypeScript/Express API and MongoDB model foundation for the Parent and Teacher apps.
 
@@ -51,6 +51,10 @@ Health and OpenAPI endpoints are registered centrally. Business routes under `/a
 
 The Guardian write and file APIs are now implemented on the backend, but the Parent app's profile edit, child-link, leave, complaint, notification-read, and upload screens have not yet been wired to these endpoints. Until that separate mobile integration is done, those UI flows may still be local/demo behavior.
 
+## Student numbers
+
+Student numbers are stored as five uppercase letters followed by a two-digit suffix. Each school has an independent, automatically incrementing sequence: `AAAAA01` through `AAAAA99`, then `AAAAB01`. Guardian child-link requests accept compact input such as `A1`, `1`, or `B01`; the backend normalizes it before lookup and returns a compact number.
+
 ## Google Cloud Storage
 
 Configure a private bucket in the same or a trusted Google Cloud project. Enable uniform bucket-level access and public access prevention; do not grant `allUsers` access. Set `GCS_BUCKET_NAME` and optionally `GCS_PROJECT_ID`. Cloud Run uses Application Default Credentials from its attached service account; do not create or bundle a service-account key in the app or container.
@@ -61,8 +65,8 @@ Example bucket and service-account policy setup:
 
 ```powershell
 gcloud storage buckets update gs://YOUR_PRIVATE_BUCKET --uniform-bucket-level-access --public-access-prevention=enforced
-gcloud storage buckets add-iam-policy-binding gs://YOUR_PRIVATE_BUCKET --member=serviceAccount:greenwood-backend@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com --role=roles/storage.objectAdmin
-gcloud iam service-accounts add-iam-policy-binding greenwood-backend@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com --member=serviceAccount:greenwood-backend@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com --role=roles/iam.serviceAccountTokenCreator
+gcloud storage buckets add-iam-policy-binding gs://YOUR_PRIVATE_BUCKET --member=serviceAccount:school-backend@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com --role=roles/storage.objectAdmin
+gcloud iam service-accounts add-iam-policy-binding school-backend@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com --member=serviceAccount:school-backend@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com --role=roles/iam.serviceAccountTokenCreator
 ```
 
 Complaint and leave attachments use the school's `fileRetentionDays` setting; profile photos currently use a 10-year retention period. The retention clock starts after the upload is verified. Incomplete uploads are eligible for cleanup 24 hours after their signed upload URL expires. The database records these deadlines, but an automated file-expiration/cleanup job is not included yet. Add a scheduled Cloud Run Job or equivalent before relying on those dates for deletion or compliance.
@@ -73,22 +77,24 @@ The included `Dockerfile` builds the TypeScript API and installs production-only
 
 - Set `GCS_BUCKET_NAME`, and set `GCS_PROJECT_ID` only if automatic project detection is unsuitable.
 - Set `MONGODB_URI`, `JWT_SECRET`, and `OTP_HMAC_SECRET` using Secret Manager references, not plaintext source-controlled environment files.
-- Attach a dedicated runtime service account with bucket-scoped object permissions and permission to sign blobs for itself (needed for signed URLs).
+- Attach a dedicated runtime service account with bucket-scoped object permissions and permission to sign blobs for itself (needed for signed URLs). Grant it Secret Manager access to the configured secrets.
 - Allow unauthenticated invocation at the Cloud Run ingress layer so the mobile app can reach the API; application routes still enforce tenant and bearer-token authorization.
 - Cloud Run supplies `PORT` (normally `8080`). The server reads it automatically and exposes `/health/live` and `/health/ready`.
 
 Example from the backend directory (replace project, region, service account, bucket, and secret names):
 
 ```powershell
-gcloud run deploy greenwood-school-backend `
+gcloud run deploy school-management-backend `
   --source . `
   --project YOUR_GCP_PROJECT_ID `
   --region YOUR_REGION `
-  --service-account greenwood-backend@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com `
+  --service-account school-backend@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com `
   --allow-unauthenticated `
   --set-env-vars GCS_BUCKET_NAME=YOUR_PRIVATE_BUCKET,GCS_PROJECT_ID=YOUR_GCP_PROJECT_ID `
   --set-secrets MONGODB_URI=mongodb-uri:latest,JWT_SECRET=guardian-jwt-secret:latest,OTP_HMAC_SECRET=guardian-otp-secret:latest
 ```
+
+The generic JWT issuer and audience are `school-management-api` and `school-management-clients`. Deploying this issuer change invalidates previously issued access tokens; clients must sign in again.
 
 Controller foundations live in `src/shared/http`: `TypedController` specifies route params, response body, request body, query, and response locals; `controllerHandler` forwards async failures to the central error handler; and `sendSuccess` emits a typed `{ data }` envelope. Health handlers demonstrate explicit response DTOs. Request interfaces are compile-time contracts only; feature controllers must also use Zod validation middleware for untrusted request data.
 

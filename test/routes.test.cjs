@@ -33,6 +33,8 @@ test('health and OpenAPI endpoints are registered centrally', async () => {
   assert.equal(openapi.status, 200);
   const specification = await openapi.json();
   assert.equal(specification.openapi, '3.0.3');
+  assert.equal(specification.paths['/api/v1/admin/test-data/import'], undefined);
+  assert.equal(specification.components.securitySchemes.testDataImportKey, undefined);
   assert.ok(specification.paths['/api/v1/guardian/auth/login']);
   assert.ok(specification.paths['/api/v1/guardian/auth/password-reset/confirmations']);
   assert.ok(specification.paths['/api/v1/guardian/auth/password/change-current']);

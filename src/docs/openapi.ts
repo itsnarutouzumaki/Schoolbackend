@@ -3,7 +3,7 @@ import type { OpenAPIV3 } from 'openapi-types';
 export const openApiDocument: OpenAPIV3.Document = {
   openapi: '3.0.3',
   info: {
-    title: 'Greenwood Shared School API',
+    title: 'School Management API',
     version: '1.0.0',
     description: [
       'Shared multi-school API for the Parent and Teacher applications.',
@@ -470,7 +470,13 @@ export const openApiDocument: OpenAPIV3.Document = {
                 additionalProperties: false,
                 required: ['studentNumber'],
                 properties: {
-                  studentNumber: { type: 'string', minLength: 1, maxLength: 80 },
+                  studentNumber: {
+                    type: 'string',
+                    minLength: 1,
+                    maxLength: 7,
+                    pattern: '^[A-Za-z]{0,5}[0-9]{1,2}$',
+                    description: 'Accepts a short number such as A1 or 1; the backend normalizes it.',
+                  },
                   studentName: { type: 'string', minLength: 1, maxLength: 120 },
                   relationship: { type: 'string', minLength: 1, maxLength: 80, default: 'Parent' },
                 },

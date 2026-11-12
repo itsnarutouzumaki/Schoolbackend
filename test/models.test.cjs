@@ -37,8 +37,8 @@ test('credentials and sensitive profile/storage fields are excluded by default',
 
 test('school file retention defaults to 30 whole days and supports school overrides', async () => {
   const school = new models.SchoolModel({
-    code: 'GREENWOOD-TEST',
-    name: 'Greenwood Test School',
+    code: 'SAMPLE-SCHOOL',
+    name: 'Example School',
   });
 
   assert.equal(school.fileRetentionDays, 30);

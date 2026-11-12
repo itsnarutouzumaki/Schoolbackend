@@ -4,7 +4,13 @@ import { AssessmentModel, AssessmentResultModel } from '../../assessments/models
 import { AttendanceEntryModel } from '../../attendance/models/index.js';
 import { FeeReceiptModel } from '../../fees/models/index.js';
 import { ComplaintModel, ChildLinkRequestModel, LeaveRequestModel } from '../../guardian-services/models/index.js';
-import { GuardianModel, ChildLinkModel, StudentModel, TeacherModel } from '../../people/models/index.js';
+import {
+  ChildLinkModel,
+  compactStudentNumber,
+  GuardianModel,
+  StudentModel,
+  TeacherModel,
+} from '../../people/models/index.js';
 import { NotificationModel } from '../../notifications/models/index.js';
 import { SchoolModel } from '../../tenant/models/index.js';
 import { UserModel } from '../../auth/models/index.js';
@@ -94,7 +100,7 @@ export async function getGuardianBootstrap(input: {
     },
     children: students.map(student => ({
       id: student._id.toString(),
-      studentNumber: student.studentNumber,
+      studentNumber: compactStudentNumber(student.studentNumber),
       fullName: student.displayName,
       admissionNumber: student.admissionNumber,
       photoFileId: student.photoFileId?.toString(),
@@ -123,7 +129,10 @@ export async function getGuardianBootstrap(input: {
     })),
     complaints,
     leaveRequests,
-    childLinkRequests: linkRequests,
+    childLinkRequests: linkRequests.map(request => ({
+      ...request,
+      proposedStudentNumber: compactStudentNumber(request.proposedStudentNumber),
+    })),
     notifications,
   };
 }

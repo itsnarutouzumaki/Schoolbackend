@@ -1,6 +1,9 @@
-import { model, models, Schema, type InferSchemaType } from 'mongoose';
+import { model, models, Schema, Types, type HydratedDocument, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
+import { ApiError } from '../../../shared/errors/index.js';
+import { SchoolModel } from '../../tenant/models/index.js';
 import { addressSchema, emergencyContactSchema } from './profile-subdocuments.js';
+import { normalizeStudentNumber, studentNumberFromSequence } from '../student-number.js';
 
 const sensitiveSupportSchema = new Schema({
   medicalNotes: { type: String, trim: true, default: undefined },
@@ -49,6 +52,51 @@ const studentSchema = new Schema({
 }, {
   ...tenantSchemaOptions,
   collection: 'students',
+});
+
+type StudentNumberFields = {
+  schoolId: Types.ObjectId;
+  studentNumber: string;
+};
+
+studentSchema.pre('validate', async function assignStudentNumber(
+  this: HydratedDocument<StudentNumberFields>,
+) {
+  if (this.studentNumber) {
+    this.studentNumber = normalizeStudentNumber(this.studentNumber);
+    return;
+  }
+  if (!this.isNew) {
+    return;
+  }
+
+  const schoolId = this.schoolId;
+  const session = this.$session();
+  while (true) {
+    const counterUpdate = SchoolModel.findOneAndUpdate(
+      { _id: schoolId },
+      { $inc: { studentNumberSequence: 1 } },
+      { returnDocument: 'after' },
+    ).select('studentNumberSequence').lean();
+    if (session) {
+      counterUpdate.session(session);
+    }
+
+    const school = await counterUpdate;
+    if (!school) {
+      throw new ApiError(404, 'STUDENT_SCHOOL_NOT_FOUND', 'The student school was not found.');
+    }
+
+    const studentNumber = studentNumberFromSequence(school.studentNumberSequence);
+    const existingQuery = StudentModel.exists({ schoolId, studentNumber });
+    if (session) {
+      existingQuery.session(session);
+    }
+    if (!await existingQuery) {
+      this.studentNumber = studentNumber;
+      return;
+    }
+  }
 });
 
 studentSchema.index({ schoolId: 1, studentNumber: 1 }, { unique: true });

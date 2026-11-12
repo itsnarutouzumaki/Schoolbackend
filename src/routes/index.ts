@@ -22,7 +22,7 @@ export function registerRoutes(app: Express): void {
   app.use('/api/v1', apiV1Router);
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument, {
     explorer: false,
-    customSiteTitle: 'Greenwood School API',
+    customSiteTitle: 'School Management API',
   }));
 }
 
