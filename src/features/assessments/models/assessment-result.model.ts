@@ -2,15 +2,15 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const assessmentResultSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  assessmentId: { type: Schema.Types.ObjectId, ref: 'Assessment', required: true },
-  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
-  obtainedMarks: { type: Number, required: true, min: 0 },
-  maxMarks: { type: Number, required: true, min: Number.EPSILON },
-  remarks: { type: String, trim: true, maxlength: 2000, default: undefined },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  assessmentId: { type: Schema.Types.ObjectId, ref: 'Assessment', required: [true, "Assessment ID is required."] },
+  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: [true, "Student ID is required."] },
+  obtainedMarks: { type: Number, required: [true, "Obtained marks is required."], min: [0, "Obtained marks must be at least 0."] },
+  maxMarks: { type: Number, required: [true, "Max marks is required."], min: [Number.EPSILON, "Max marks must be at least greater than zero."] },
+  remarks: { type: String, trim: true, maxlength: [2000, "Remarks must be 2000 characters or fewer."], default: undefined },
   answerCopyFileId: { type: Schema.Types.ObjectId, ref: 'FileRecord', default: undefined },
-  answerCopyPageCount: { type: Number, min: 1, default: undefined },
-  revision: { type: Number, min: 1, default: 1, required: true },
+  answerCopyPageCount: { type: Number, min: [1, "Answer copy page count must be at least 1."], default: undefined },
+  revision: { type: Number, min: [1, "Revision must be at least 1."], default: 1, required: [true, "Revision is required."] },
 }, {
   ...tenantSchemaOptions,
   collection: 'assessment_results',

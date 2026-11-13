@@ -4,9 +4,14 @@ import { getTypedModel } from '../../../shared/database/index.js';
 import { addressSchema, emergencyContactSchema } from './profile-subdocuments.js';
 
 const guardianSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  fullName: { type: String, required: true, trim: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: [true, "User ID is required."] },
+  fullName: { type: String, required: [true, "Full name is required."], trim: true },
+  gender: {
+    type: String,
+    enum: { values: ['Male', 'Female', 'Other', 'Prefer not to say'], message: "Gender must be a valid option." },
+    default: undefined,
+  },
   photoFileId: { type: Schema.Types.ObjectId, ref: 'FileRecord', default: undefined },
   currentAddress: { type: addressSchema, default: undefined, select: false },
   permanentAddress: { type: addressSchema, default: undefined, select: false },
@@ -37,6 +42,7 @@ export type Guardian = {
   schoolId: Types.ObjectId;
   userId: Types.ObjectId;
   fullName: string;
+  gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
   photoFileId?: Types.ObjectId;
   currentAddress?: { line1?: string; line2?: string; city?: string; state?: string; postalCode?: string; countryCode?: string };
   relationshipDetails?: string;

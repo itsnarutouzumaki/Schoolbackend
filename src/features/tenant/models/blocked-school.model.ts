@@ -5,15 +5,15 @@ import { getTypedModel } from '../../../shared/database/index.js';
 const blockedSchoolSchema = new Schema({
   schoolCode: {
     type: String,
-    required: true,
+    required: [true, "School code is required."],
     uppercase: true,
     trim: true,
-    match: /^[A-Z0-9-]+$/,
+    match: [/^[A-Z0-9-]+$/, "School code has an invalid format."],
   },
   schoolId: { type: Schema.Types.ObjectId, ref: 'School', default: undefined },
-  reasonInternal: { type: String, required: true, trim: true },
-  blockedAt: { type: Date, required: true, default: Date.now },
-  blockedByPlatformUserId: { type: Schema.Types.ObjectId, required: true },
+  reasonInternal: { type: String, required: [true, "Reason internal is required."], trim: true },
+  blockedAt: { type: Date, required: [true, "Blocked at is required."], default: Date.now },
+  blockedByPlatformUserId: { type: Schema.Types.ObjectId, required: [true, "Blocked by platform user ID is required."] },
   expiresAt: { type: Date, default: null },
 }, {
   ...tenantSchemaOptions,

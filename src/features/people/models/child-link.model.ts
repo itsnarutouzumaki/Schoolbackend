@@ -2,17 +2,17 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const childLinkSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  guardianId: { type: Schema.Types.ObjectId, ref: 'Guardian', required: true },
-  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
-  relationship: { type: String, required: true, trim: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  guardianId: { type: Schema.Types.ObjectId, ref: 'Guardian', required: [true, "Guardian ID is required."] },
+  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: [true, "Student ID is required."] },
+  relationship: { type: String, required: [true, "Relationship is required."], trim: true },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'denied', 'revoked'],
+    enum: { values: ['pending', 'approved', 'denied', 'revoked'], message: "Status must be a valid option." },
     default: 'pending',
-    required: true,
+    required: [true, "Status is required."],
   },
-  requestedAt: { type: Date, required: true, default: Date.now },
+  requestedAt: { type: Date, required: [true, "Requested at is required."], default: Date.now },
   reviewedAt: { type: Date, default: undefined },
   reviewedByUserId: { type: Schema.Types.ObjectId, ref: 'User', default: undefined },
   reviewNote: { type: String, trim: true, default: undefined },

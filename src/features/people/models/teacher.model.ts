@@ -19,19 +19,24 @@ const employmentSchema = new Schema({
 }, { _id: false, strict: 'throw' });
 
 const teacherSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  displayName: { type: String, required: true, trim: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: [true, "User ID is required."] },
+  displayName: { type: String, required: [true, "Display name is required."], trim: true },
+  gender: {
+    type: String,
+    enum: { values: ['Male', 'Female', 'Other', 'Prefer not to say'], message: "Gender must be a valid option." },
+    default: undefined,
+  },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'left'],
+    enum: { values: ['active', 'inactive', 'left'], message: "Status must be a valid option." },
     default: 'active',
-    required: true,
+    required: [true, "Status is required."],
   },
   designation: { type: String, trim: true, default: undefined },
   subjects: { type: [String], default: undefined },
   qualifications: { type: [String], default: undefined },
-  experienceYears: { type: Number, min: 0, default: undefined },
+  experienceYears: { type: Number, min: [0, "Experience years must be at least 0."], default: undefined },
   specialization: { type: String, trim: true, default: undefined },
   biography: { type: String, trim: true, default: undefined },
   languages: { type: [String], default: undefined },
@@ -60,6 +65,7 @@ export type Teacher = {
   schoolId: Types.ObjectId;
   userId: Types.ObjectId;
   displayName: string;
+  gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
   status: 'active' | 'inactive' | 'left';
   designation?: string;
   subjects?: string[];

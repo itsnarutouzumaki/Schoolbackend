@@ -4,25 +4,25 @@ import { tenantSchemaOptions } from '../../../shared/database/index.js';
 const complaintStatusChangeSchema = new Schema({
   status: {
     type: String,
-    enum: ['open', 'inProgress', 'resolved', 'closed'],
-    required: true,
+    enum: { values: ['open', 'inProgress', 'resolved', 'closed'], message: "Status must be a valid option." },
+    required: [true, "Status is required."],
   },
-  actorUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  note: { type: String, trim: true, maxlength: 2000, default: undefined },
-  changedAt: { type: Date, required: true, default: Date.now },
+  actorUserId: { type: Schema.Types.ObjectId, ref: 'User', required: [true, "Actor user ID is required."] },
+  note: { type: String, trim: true, maxlength: [2000, "Note must be 2000 characters or fewer."], default: undefined },
+  changedAt: { type: Date, required: [true, "Changed at is required."], default: Date.now },
 }, { _id: false, strict: 'throw' });
 
 const complaintSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  guardianId: { type: Schema.Types.ObjectId, ref: 'Guardian', required: true },
-  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
-  subject: { type: String, required: true, trim: true, maxlength: 200 },
-  message: { type: String, required: true, trim: true, maxlength: 10000 },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  guardianId: { type: Schema.Types.ObjectId, ref: 'Guardian', required: [true, "Guardian ID is required."] },
+  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: [true, "Student ID is required."] },
+  subject: { type: String, required: [true, "Subject is required."], trim: true, maxlength: [200, "Subject must be 200 characters or fewer."] },
+  message: { type: String, required: [true, "Message is required."], trim: true, maxlength: [10000, "Message must be 10000 characters or fewer."] },
   status: {
     type: String,
-    enum: ['open', 'inProgress', 'resolved', 'closed'],
+    enum: { values: ['open', 'inProgress', 'resolved', 'closed'], message: "Status must be a valid option." },
     default: 'open',
-    required: true,
+    required: [true, "Status is required."],
   },
   assignedToUserId: { type: Schema.Types.ObjectId, ref: 'User', default: undefined },
   statusHistory: { type: [complaintStatusChangeSchema], default: [] },

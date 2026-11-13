@@ -2,20 +2,20 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const deviceTokenSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  appAudience: { type: String, enum: ['guardian', 'teacher'], required: true },
-  platform: { type: String, enum: ['android', 'ios'], required: true },
-  encryptedToken: { type: String, required: true, select: false },
-  tokenHash: { type: String, required: true, select: false },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: [true, "User ID is required."] },
+  appAudience: { type: String, enum: { values: ['guardian', 'teacher'], message: "App audience must be a valid option." }, required: [true, "App audience is required."] },
+  platform: { type: String, enum: { values: ['android', 'ios'], message: "Platform must be a valid option." }, required: [true, "Platform is required."] },
+  encryptedToken: { type: String, required: [true, "Encrypted token is required."], select: false },
+  tokenHash: { type: String, required: [true, "Token hash is required."], select: false },
   deviceId: { type: String, trim: true, default: undefined },
   status: {
     type: String,
-    enum: ['active', 'revoked'],
+    enum: { values: ['active', 'revoked'], message: "Status must be a valid option." },
     default: 'active',
-    required: true,
+    required: [true, "Status is required."],
   },
-  lastSeenAt: { type: Date, required: true, default: Date.now },
+  lastSeenAt: { type: Date, required: [true, "Last seen at is required."], default: Date.now },
   revokedAt: { type: Date, default: undefined },
 }, {
   ...tenantSchemaOptions,

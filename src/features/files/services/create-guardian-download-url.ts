@@ -49,6 +49,12 @@ async function canGuardianAccessReferencedFile(
     userId: input.userId,
   }).select('_id');
   if (!guardian) return false;
+  if (
+    fileRecord.relatedEntityType === 'school'
+    && fileRecord.relatedEntityId.equals(new Types.ObjectId(input.schoolId))
+  ) {
+    return true;
+  }
   if (fileRecord.relatedEntityType === 'guardian') {
     return fileRecord.relatedEntityId.equals(guardian._id);
   }

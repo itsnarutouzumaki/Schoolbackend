@@ -2,14 +2,14 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const subjectAssignmentSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  classSectionId: { type: Schema.Types.ObjectId, ref: 'ClassSection', required: true },
-  subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: true },
-  teacherId: { type: Schema.Types.ObjectId, ref: 'Teacher', required: true },
-  academicYearId: { type: Schema.Types.ObjectId, ref: 'AcademicYear', required: true },
-  startsOn: { type: String, match: /^\d{4}-\d{2}-\d{2}$/, default: undefined },
-  endsOn: { type: String, match: /^\d{4}-\d{2}-\d{2}$/, default: undefined },
-  active: { type: Boolean, default: true, required: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  classSectionId: { type: Schema.Types.ObjectId, ref: 'ClassSection', required: [true, "Class section ID is required."] },
+  subjectId: { type: Schema.Types.ObjectId, ref: 'Subject', required: [true, "Subject ID is required."] },
+  teacherId: { type: Schema.Types.ObjectId, ref: 'Teacher', required: [true, "Teacher ID is required."] },
+  academicYearId: { type: Schema.Types.ObjectId, ref: 'AcademicYear', required: [true, "Academic year ID is required."] },
+  startsOn: { type: String, match: [/^\d{4}-\d{2}-\d{2}$/, "Starts on must use YYYY-MM-DD format."], default: undefined },
+  endsOn: { type: String, match: [/^\d{4}-\d{2}-\d{2}$/, "Ends on must use YYYY-MM-DD format."], default: undefined },
+  active: { type: Boolean, default: true, required: [true, "Active is required."] },
 }, {
   ...tenantSchemaOptions,
   collection: 'subject_assignments',

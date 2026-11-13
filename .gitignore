@@ -3,5 +3,6 @@ dist/
 .env
 .env.*
 !.env.example
+profile-images.local.json
 coverage/
 npm-debug.log*

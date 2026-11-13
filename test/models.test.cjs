@@ -21,6 +21,51 @@ test('tenant-owned models require an internal school ID', () => {
   }
 });
 
+test('model validators return field-specific messages for fields and subdocuments', async () => {
+  const school = new models.SchoolModel({
+    code: 'INVALID CODE',
+    name: '',
+  });
+
+  await assert.rejects(school.validate(), error => (
+    error.name === 'ValidationError'
+    && error.errors.code.message === 'Code has an invalid format.'
+    && error.errors.name.message === 'Name is required.'
+  ));
+
+  const receipt = new models.FeeReceiptModel({
+    schoolId: new mongoose.Types.ObjectId(),
+    studentId: new mongoose.Types.ObjectId(),
+    academicYearId: new mongoose.Types.ObjectId(),
+    period: 'October',
+    periodSort: 10,
+    breakdown: [{ label: '', amountMinor: 0 }],
+    totalMinor: 0,
+    receiptNumber: 'R-1002',
+  });
+
+  await assert.rejects(receipt.validate(), error => (
+    error.name === 'ValidationError'
+    && error.errors['breakdown.0.label'].message
+      === 'Label is required.'
+  ));
+});
+
+test('all model validators declare specific validation messages', () => {
+  for (const [modelName, model] of modelExports) {
+    model.schema.eachPath((pathName, schemaType) => {
+      for (const validator of schemaType.validators) {
+        assert.ok(
+          validator.message
+            && !String(validator.message).includes('{PATH}')
+            && !String(validator.message).includes('Validator failed for path'),
+          `${modelName}.${pathName} ${validator.type} validator must declare a message`,
+        );
+      }
+    });
+  }
+});
+
 test('credentials and sensitive profile/storage fields are excluded by default', () => {
   assert.equal(models.UserModel.schema.path('passwordHash').options.select, false);
   assert.equal(models.AuthChallengeModel.schema.path('codeHash').options.select, false);
@@ -33,6 +78,20 @@ test('credentials and sensitive profile/storage fields are excluded by default',
     ['guardian', 'teacher', 'schoolAdmin'],
   );
   assert.equal(models.RefreshSessionModel.schema.path('authVersion').isRequired, true);
+});
+
+test('guardian and teacher genders are optional and limited to supported profile values', () => {
+  const validGenders = ['Male', 'Female', 'Other', 'Prefer not to say'];
+
+  for (const model of [models.GuardianModel, models.TeacherModel]) {
+    const genderPath = model.schema.path('gender');
+    assert.notEqual(genderPath.isRequired, true);
+    assert.deepEqual(genderPath.enumValues, validGenders);
+    assert.equal(
+      genderPath.validators.find(validator => validator.type === 'enum').message,
+      'Gender must be a valid option.',
+    );
+  }
 });
 
 test('school file retention defaults to 30 whole days and supports school overrides', async () => {

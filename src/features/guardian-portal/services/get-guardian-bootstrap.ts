@@ -14,6 +14,8 @@ import {
 import { NotificationModel } from '../../notifications/models/index.js';
 import { SchoolModel } from '../../tenant/models/index.js';
 import { UserModel } from '../../auth/models/index.js';
+import { FileRecordModel } from '../../files/models/index.js';
+import { createSignedDownloadUrl } from '../../files/storage/index.js';
 import { ApiError } from '../../../shared/errors/index.js';
 
 export async function getGuardianBootstrap(input: {
@@ -23,7 +25,7 @@ export async function getGuardianBootstrap(input: {
   const schoolId = new Types.ObjectId(input.schoolId);
   const userId = new Types.ObjectId(input.userId);
   const guardian = await GuardianModel.findOne({ schoolId, userId })
-    .select('_id fullName photoFileId relationshipDetails +currentAddress')
+    .select('_id fullName gender photoFileId relationshipDetails +currentAddress')
     .lean();
   if (!guardian) {
     throw new ApiError(403, 'GUARDIAN_PROFILE_UNAVAILABLE', 'The guardian profile is not available.');
@@ -51,7 +53,7 @@ export async function getGuardianBootstrap(input: {
     schoolId,
     _id: { $in: studentIds },
     status: 'active',
-  }).select('studentNumber displayName admissionNumber photoFileId classSectionId rollNumber').lean();
+  }).select('studentNumber displayName admissionNumber gender photoFileId classSectionId rollNumber').lean();
   const classSectionIds = students.flatMap(student => student.classSectionId ? [student.classSectionId] : []);
   const sections = await ClassSectionModel.find().where({ schoolId, _id: { $in: classSectionIds } })
     .select('academicYearId className section classTeacherId').lean();
@@ -71,10 +73,34 @@ export async function getGuardianBootstrap(input: {
     SubjectModel.find().where({ schoolId, _id: { $in: assignments.map(item => item.subjectId) } })
       .select('name code').lean(),
     TeacherModel.find().where({ schoolId, _id: { $in: assignments.map(item => item.teacherId).concat(sections.flatMap(item => item.classTeacherId ? [item.classTeacherId] : [])) }, status: 'active' })
-      .select('displayName designation subjects qualifications experienceYears specialization biography languages photoFileId').lean(),
+      .select('displayName gender designation subjects qualifications experienceYears specialization biography languages photoFileId').lean(),
     AssessmentResultModel.find().where({ schoolId, studentId: { $in: studentIds }, assessmentId: { $in: assessments.map(item => item._id) } })
       .select('assessmentId studentId obtainedMarks maxMarks remarks answerCopyFileId').lean(),
   ]);
+
+  const photoFileIds = [
+    guardian.photoFileId,
+    ...students.map(student => student.photoFileId),
+    ...teachers.map(teacher => teacher.photoFileId),
+  ].filter((fileId): fileId is Types.ObjectId => Boolean(fileId));
+  const photoFiles = photoFileIds.length
+    ? await FileRecordModel.find({
+      schoolId,
+      _id: { $in: [...new Set(photoFileIds.map(fileId => fileId.toString()))] },
+      purpose: 'profile-photo',
+      status: 'ready',
+    }).select('+storageRef +storageGeneration').lean()
+    : [];
+  const photoUrlEntries = await Promise.all(photoFiles.map(async file => {
+    if (!file.storageRef || !file.storageGeneration) return null;
+    return [
+      file._id.toString(),
+      await createSignedDownloadUrl(file.storageRef, file.storageGeneration),
+    ] as const;
+  }));
+  const photoUrls = new Map(photoUrlEntries.filter(
+    (entry): entry is readonly [string, string] => entry !== null,
+  ));
 
   return {
     school: school ? {
@@ -93,7 +119,11 @@ export async function getGuardianBootstrap(input: {
         fullName: guardian.fullName,
         phone: user?.normalizedPhone ?? '',
         email: user?.normalizedEmail ?? '',
+        gender: guardian.gender,
         photoFileId: guardian.photoFileId?.toString(),
+        photoUrl: guardian.photoFileId
+          ? photoUrls.get(guardian.photoFileId.toString())
+          : undefined,
         address: guardian.currentAddress?.line1 ?? '',
         relationship: guardian.relationshipDetails ?? 'Parent',
       },
@@ -102,8 +132,12 @@ export async function getGuardianBootstrap(input: {
       id: student._id.toString(),
       studentNumber: compactStudentNumber(student.studentNumber),
       fullName: student.displayName,
+      gender: student.gender ?? '',
       admissionNumber: student.admissionNumber,
       photoFileId: student.photoFileId?.toString(),
+      photoUrl: student.photoFileId
+        ? photoUrls.get(student.photoFileId.toString())
+        : undefined,
       rollNumber: student.rollNumber,
       relationship: links.find(link => link.studentId.equals(student._id))?.relationship ?? '',
       classSection: sections.find(section => section._id.equals(student.classSectionId)),
@@ -125,7 +159,12 @@ export async function getGuardianBootstrap(input: {
       ) || sections.some(
         section => section._id.equals(student.classSectionId)
           && section.classTeacherId?.equals(teacher._id),
-      )),
+      )).map(teacher => ({
+        ...teacher,
+        photoUrl: teacher.photoFileId
+          ? photoUrls.get(teacher.photoFileId.toString())
+          : undefined,
+      })),
     })),
     complaints,
     leaveRequests,

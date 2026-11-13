@@ -391,7 +391,7 @@ export const openApiDocument: OpenAPIV3.Document = {
         parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
         security: [{ bearerAuth: [] }],
         responses: {
-          '200': { description: 'Guardian profile, linked-child records, and request histories.' },
+          '200': { description: 'Guardian profile, linked-child records, request histories, and short-lived private profile-photo URLs.' },
           '401': { description: 'Authentication is required.' },
           '403': { description: 'This endpoint is available only to guardian accounts.' },
         },

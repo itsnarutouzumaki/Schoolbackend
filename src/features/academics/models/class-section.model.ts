@@ -2,15 +2,15 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const classSectionSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  academicYearId: { type: Schema.Types.ObjectId, ref: 'AcademicYear', required: true },
-  className: { type: String, required: true, trim: true },
-  section: { type: String, required: true, trim: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  academicYearId: { type: Schema.Types.ObjectId, ref: 'AcademicYear', required: [true, "Academic year ID is required."] },
+  className: { type: String, required: [true, "Class name is required."], trim: true },
+  section: { type: String, required: [true, "Section is required."], trim: true },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'archived'],
+    enum: { values: ['active', 'inactive', 'archived'], message: "Status must be a valid option." },
     default: 'active',
-    required: true,
+    required: [true, "Status is required."],
   },
   classTeacherId: { type: Schema.Types.ObjectId, ref: 'Teacher', default: undefined },
 }, {

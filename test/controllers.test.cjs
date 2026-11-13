@@ -4,6 +4,7 @@ const test = require('node:test');
 const { controllerHandler, sendSuccess } = require('../dist/shared/http/index.js');
 const { ApiError } = require('../dist/shared/errors/index.js');
 const { errorHandler } = require('../dist/middlewares/index.js');
+const { SchoolModel } = require('../dist/features/index.js');
 
 let server;
 let baseUrl;
@@ -20,6 +21,12 @@ test.before(async () => {
   }));
   controllerApp.post('/failure', controllerHandler(async () => {
     throw new ApiError(422, 'INPUT_REJECTED', 'The submitted data is not acceptable.');
+  }));
+  controllerApp.post('/model-validation', controllerHandler(async () => {
+    await new SchoolModel({
+      code: 'TEST',
+      fileRetentionDays: 'not-a-number',
+    }).validate();
   }));
   controllerApp.use(errorHandler);
 
@@ -64,4 +71,17 @@ test('rejected async controller work reaches centralized error handling', async 
       retryable: false,
     },
   });
+});
+
+test('model validation failures return their field-specific message', async () => {
+  const response = await fetch(`${baseUrl}/model-validation`, {
+    method: 'POST',
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(body.error.code, 'MODEL_VALIDATION_FAILED');
+  assert.match(body.error.message, /Name is required\./);
+  assert.match(body.error.message, /The fileRetentionDays field has an invalid value\./);
+  assert.equal(body.error.requestId, 'controller-test-request');
 });

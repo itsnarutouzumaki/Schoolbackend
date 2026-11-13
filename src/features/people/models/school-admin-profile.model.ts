@@ -3,14 +3,14 @@ import { tenantSchemaOptions } from '../../../shared/database/index.js';
 import { getTypedModel } from '../../../shared/database/index.js';
 
 const schoolAdminProfileSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  displayName: { type: String, required: true, trim: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: [true, "User ID is required."] },
+  displayName: { type: String, required: [true, "Display name is required."], trim: true },
   status: {
     type: String,
-    enum: ['active', 'inactive'],
+    enum: { values: ['active', 'inactive'], message: "Status must be a valid option." },
     default: 'active',
-    required: true,
+    required: [true, "Status is required."],
   },
   title: { type: String, trim: true, default: undefined },
   department: { type: String, trim: true, default: undefined },

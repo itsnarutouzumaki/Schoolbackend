@@ -3,25 +3,25 @@ import { tenantSchemaOptions } from '../../../shared/database/index.js';
 import { getTypedModel } from '../../../shared/database/index.js';
 
 const authChallengeSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  challengeId: { type: String, required: true, immutable: true },
-  normalizedPhone: { type: String, required: true, trim: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  challengeId: { type: String, required: [true, "Challenge ID is required."], immutable: true },
+  normalizedPhone: { type: String, required: [true, "Normalized phone is required."], trim: true },
   purpose: {
     type: String,
-    enum: ['guardian-signup-phone', 'guardian-password-reset'],
-    required: true,
+    enum: { values: ['guardian-signup-phone', 'guardian-password-reset'], message: "Purpose must be a valid option." },
+    required: [true, "Purpose is required."],
   },
-  codeHash: { type: String, required: true, select: false },
-  attemptCount: { type: Number, min: 0, default: 0, required: true },
-  attemptLimit: { type: Number, min: 1, default: 5, required: true },
-  expiresAt: { type: Date, required: true },
+  codeHash: { type: String, required: [true, "Code hash is required."], select: false },
+  attemptCount: { type: Number, min: [0, "Attempt count must be at least 0."], default: 0, required: [true, "Attempt count is required."] },
+  attemptLimit: { type: Number, min: [1, "Attempt limit must be at least 1."], default: 5, required: [true, "Attempt limit is required."] },
+  expiresAt: { type: Date, required: [true, "Expires at is required."] },
   verifiedAt: { type: Date, default: undefined },
   consumedAt: { type: Date, default: undefined },
   deliveryStatus: {
     type: String,
-    enum: ['pending', 'sent', 'failed'],
+    enum: { values: ['pending', 'sent', 'failed'], message: "Delivery status must be a valid option." },
     default: 'pending',
-    required: true,
+    required: [true, "Delivery status is required."],
   },
 }, {
   ...tenantSchemaOptions,

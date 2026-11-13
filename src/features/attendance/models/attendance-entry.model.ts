@@ -2,21 +2,21 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const attendanceEntrySchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
   attendanceSessionId: {
     type: Schema.Types.ObjectId,
     ref: 'AttendanceSession',
-    required: true,
+    required: [true, "Attendance session ID is required."],
   },
-  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
-  classSectionId: { type: Schema.Types.ObjectId, ref: 'ClassSection', required: true },
-  date: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
+  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: [true, "Student ID is required."] },
+  classSectionId: { type: Schema.Types.ObjectId, ref: 'ClassSection', required: [true, "Class section ID is required."] },
+  date: { type: String, required: [true, "Date is required."], match: [/^\d{4}-\d{2}-\d{2}$/, "Date must use YYYY-MM-DD format."] },
   status: {
     type: String,
-    enum: ['present', 'absent', 'holiday', 'noClass'],
-    required: true,
+    enum: { values: ['present', 'absent', 'holiday', 'noClass'], message: "Status must be a valid option." },
+    required: [true, "Status is required."],
   },
-  note: { type: String, trim: true, maxlength: 500, default: undefined },
+  note: { type: String, trim: true, maxlength: [500, "Note must be 500 characters or fewer."], default: undefined },
 }, {
   ...tenantSchemaOptions,
   collection: 'attendance_entries',

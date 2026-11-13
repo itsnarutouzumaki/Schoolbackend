@@ -2,11 +2,11 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const notificationSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  eventId: { type: String, required: true, trim: true },
-  eventType: { type: String, required: true, trim: true },
-  subject: { type: String, required: true, trim: true, maxlength: 160 },
-  body: { type: String, required: true, trim: true, maxlength: 2000 },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  eventId: { type: String, required: [true, "Event ID is required."], trim: true },
+  eventType: { type: String, required: [true, "Event type is required."], trim: true },
+  subject: { type: String, required: [true, "Subject is required."], trim: true, maxlength: [160, "Subject must be 160 characters or fewer."] },
+  body: { type: String, required: [true, "Body is required."], trim: true, maxlength: [2000, "Body must be 2000 characters or fewer."] },
   routeName: { type: String, trim: true, default: undefined },
   routeParams: {
     type: Map,
@@ -19,17 +19,17 @@ const notificationSchema = new Schema({
   },
   targetAudience: {
     type: String,
-    enum: ['guardian', 'teacher', 'schoolAdmin'],
-    required: true,
+    enum: { values: ['guardian', 'teacher', 'schoolAdmin'], message: "Target audience must be a valid option." },
+    required: [true, "Target audience is required."],
   },
-  recipientUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  recipientUserId: { type: Schema.Types.ObjectId, ref: 'User', required: [true, "Recipient user ID is required."] },
   deliveredAt: { type: Date, default: undefined },
   readAt: { type: Date, default: undefined },
   pushStatus: {
     type: String,
-    enum: ['pending', 'sent', 'failed', 'notRequested'],
+    enum: { values: ['pending', 'sent', 'failed', 'notRequested'], message: "Push status must be a valid option." },
     default: 'pending',
-    required: true,
+    required: [true, "Push status is required."],
   },
   pushAttemptedAt: { type: Date, default: undefined },
 }, {

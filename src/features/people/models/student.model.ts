@@ -11,14 +11,14 @@ const sensitiveSupportSchema = new Schema({
 }, { _id: false, strict: 'throw' });
 
 const studentSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  studentNumber: { type: String, required: true, trim: true },
-  displayName: { type: String, required: true, trim: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  studentNumber: { type: String, required: [true, "Student number is required."], trim: true },
+  displayName: { type: String, required: [true, "Display name is required."], trim: true },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'graduated', 'withdrawn'],
+    enum: { values: ['active', 'inactive', 'graduated', 'withdrawn'], message: "Status must be a valid option." },
     default: 'active',
-    required: true,
+    required: [true, "Status is required."],
   },
   admissionNumber: { type: String, trim: true, default: undefined },
   dateOfBirth: { type: Date, default: undefined, select: false },

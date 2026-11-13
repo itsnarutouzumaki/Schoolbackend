@@ -3,27 +3,27 @@ import { tenantSchemaOptions } from '../../../shared/database/index.js';
 import { getTypedModel } from '../../../shared/database/index.js';
 
 const userSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
   role: {
     type: String,
-    enum: ['guardian', 'teacher', 'schoolAdmin'],
-    required: true,
+    enum: { values: ['guardian', 'teacher', 'schoolAdmin'], message: "Role must be a valid option." },
+    required: [true, "Role is required."],
   },
   status: {
     type: String,
-    enum: ['invited', 'active', 'disabled', 'locked'],
+    enum: { values: ['invited', 'active', 'disabled', 'locked'], message: "Status must be a valid option." },
     default: 'active',
-    required: true,
+    required: [true, "Status is required."],
   },
-  normalizedPhone: { type: String, required: true, trim: true },
+  normalizedPhone: { type: String, required: [true, "Normalized phone is required."], trim: true },
   normalizedEmail: { type: String, lowercase: true, trim: true, default: undefined },
-  passwordHash: { type: String, required: true, select: false },
-  mustChangePassword: { type: Boolean, default: false, required: true },
+  passwordHash: { type: String, required: [true, "Password hash is required."], select: false },
+  mustChangePassword: { type: Boolean, default: false, required: [true, "Must change password is required."] },
   phoneVerifiedAt: { type: Date, default: undefined },
   emailVerifiedAt: { type: Date, default: undefined },
-  authVersion: { type: Number, min: 0, default: 0, required: true },
+  authVersion: { type: Number, min: [0, "Auth version must be at least 0."], default: 0, required: [true, "Auth version is required."] },
   profileId: { type: Schema.Types.ObjectId, default: undefined },
-  failedLoginCount: { type: Number, min: 0, default: 0, select: false },
+  failedLoginCount: { type: Number, min: [0, "Failed login count must be at least 0."], default: 0, select: false },
   lockedUntil: { type: Date, default: undefined, select: false },
   passwordChangedAt: { type: Date, default: undefined },
 }, {

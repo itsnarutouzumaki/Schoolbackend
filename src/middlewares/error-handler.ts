@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler } from 'express';
 import type { ParamsDictionary } from 'express-serve-static-core';
 import type { ParsedQs } from 'qs';
+import { Error as MongooseError } from 'mongoose';
 import type { ApiErrorResponse, RequestLocals } from '../shared/http/index.js';
 import { ApiError } from '../shared/errors/index.js';
 
@@ -25,6 +26,34 @@ function getRequestParsingError(error: unknown): ApiError | undefined {
   return undefined;
 }
 
+function getModelValidationError(error: unknown): ApiError | undefined {
+  if (error instanceof MongooseError.ValidationError) {
+    const messages = Object.values(error.errors)
+      .map((validationError) => (
+        validationError instanceof MongooseError.CastError
+          ? `The ${validationError.path} field has an invalid value.`
+          : validationError.message
+      ))
+      .filter(Boolean);
+
+    return new ApiError(
+      400,
+      'MODEL_VALIDATION_FAILED',
+      messages.join(' '),
+    );
+  }
+
+  if (error instanceof MongooseError.CastError) {
+    return new ApiError(
+      400,
+      'INVALID_FIELD_VALUE',
+      `The ${error.path} field has an invalid value.`,
+    );
+  }
+
+  return undefined;
+}
+
 export const errorHandler: ErrorRequestHandler<
   ParamsDictionary,
   ApiErrorResponse,
@@ -35,7 +64,7 @@ export const errorHandler: ErrorRequestHandler<
   const requestId = response.locals.requestId;
   const normalizedError = error instanceof ApiError
     ? error
-    : getRequestParsingError(error);
+    : getRequestParsingError(error) ?? getModelValidationError(error);
 
   if (!normalizedError) {
     console.error('Unhandled API request error.', {

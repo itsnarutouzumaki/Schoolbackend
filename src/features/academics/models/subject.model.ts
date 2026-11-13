@@ -2,14 +2,14 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const subjectSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  name: { type: String, required: true, trim: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  name: { type: String, required: [true, "Name is required."], trim: true },
   code: { type: String, uppercase: true, trim: true, default: undefined },
   status: {
     type: String,
-    enum: ['active', 'inactive'],
+    enum: { values: ['active', 'inactive'], message: "Status must be a valid option." },
     default: 'active',
-    required: true,
+    required: [true, "Status is required."],
   },
 }, {
   ...tenantSchemaOptions,

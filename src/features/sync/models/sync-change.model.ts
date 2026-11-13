@@ -2,14 +2,14 @@ import { model, models, Schema, type InferSchemaType } from 'mongoose';
 import { tenantSchemaOptions } from '../../../shared/database/index.js';
 
 const syncChangeSchema = new Schema({
-  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: true },
-  revision: { type: Number, min: 1, required: true },
-  entityType: { type: String, required: true, trim: true },
-  entityId: { type: Schema.Types.ObjectId, required: true },
-  operation: { type: String, enum: ['upsert', 'delete'], required: true },
+  schoolId: { type: Schema.Types.ObjectId, ref: 'School', required: [true, "School ID is required."] },
+  revision: { type: Number, min: [1, "Revision must be at least 1."], required: [true, "Revision is required."] },
+  entityType: { type: String, required: [true, "Entity type is required."], trim: true },
+  entityId: { type: Schema.Types.ObjectId, required: [true, "Entity ID is required."] },
+  operation: { type: String, enum: { values: ['upsert', 'delete'], message: "Operation must be a valid option." }, required: [true, "Operation is required."] },
   visibleRoles: {
     type: [String],
-    enum: ['guardian', 'teacher', 'schoolAdmin'],
+    enum: { values: ['guardian', 'teacher', 'schoolAdmin'], message: "Visible roles must be a valid option." },
     default: [],
   },
   recipientUserIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
