@@ -23,6 +23,13 @@ export const sendTestParentNotificationController: TypedController<
   if (auth.role !== 'teacher' || auth.appAudience !== 'teacher') {
     throw new ApiError(403, 'ROLE_FORBIDDEN', 'Only authenticated Teacher accounts can use this test endpoint.');
   }
+  // TEMP NOTIFICATION DEBUG: remove after push-delivery diagnosis.
+  console.info('[TEMP-NOTIFICATION-DEBUG] test-send.controller.start', {
+    requestId: response.locals.requestId,
+    senderRole: auth.role,
+    receiverId: request.body.receiverId,
+    receiverRole: request.body.receiverRole,
+  });
   const data = await sendTestNotification({
     schoolId: tenant.schoolId,
     senderId: auth.userId,
@@ -32,6 +39,14 @@ export const sendTestParentNotificationController: TypedController<
     subject: request.body.subject,
     description: request.body.description,
     ...(request.body.attachmentFileId ? { attachmentFileId: request.body.attachmentFileId } : {}),
+    diagnosticId: response.locals.requestId,
+  });
+  // TEMP NOTIFICATION DEBUG: remove after push-delivery diagnosis.
+  console.info('[TEMP-NOTIFICATION-DEBUG] test-send.controller.complete', {
+    requestId: response.locals.requestId,
+    eventId: data.eventId,
+    recipientCount: data.recipientCount,
+    delivery: data.delivery,
   });
   response.status(201).json({ data });
 };

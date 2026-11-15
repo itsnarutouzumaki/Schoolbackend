@@ -11,9 +11,16 @@ export async function registerNotificationDevice(input: {
   platform: NotificationPlatform;
   token: string;
 }) {
+  // TEMP NOTIFICATION DEBUG: token contents are intentionally not logged.
+  console.info('[TEMP-NOTIFICATION-DEBUG] device-register.encrypting', {
+    userId: input.userId,
+    role: input.role,
+    platform: input.platform,
+    encryptionKeyConfigured: Boolean(process.env.DEVICE_TOKEN_ENCRYPTION_KEY),
+  });
   const encryptedToken = encryptDeviceToken(input.token);
   const now = new Date();
-  await DeviceTokenModel.updateOne(
+  const result = await DeviceTokenModel.updateOne(
     { schoolId: input.schoolId, tokenHash: hashDeviceToken(input.token) },
     {
       $set: {
@@ -29,6 +36,15 @@ export async function registerNotificationDevice(input: {
     },
     { upsert: true, runValidators: true },
   );
+  // TEMP NOTIFICATION DEBUG: remove after push-delivery diagnosis.
+  console.info('[TEMP-NOTIFICATION-DEBUG] device-register.persisted', {
+    userId: input.userId,
+    role: input.role,
+    platform: input.platform,
+    matchedCount: result.matchedCount,
+    modifiedCount: result.modifiedCount,
+    upsertedCount: result.upsertedCount,
+  });
 }
 
 export async function unregisterNotificationDevice(input: {

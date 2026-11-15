@@ -10,6 +10,7 @@ export async function sendTestNotification(input: {
   subject: string;
   description: string;
   attachmentFileId?: string;
+  diagnosticId?: string;
 }) {
   return sendNotification({
     schoolId: input.schoolId,
@@ -21,5 +22,6 @@ export async function sendTestNotification(input: {
     description: input.description,
     ...(input.attachmentFileId ? { attachmentFileId: input.attachmentFileId } : {}),
     eventType: 'general',
+    diagnosticId: input.diagnosticId,
   });
 }
