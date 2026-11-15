@@ -2,6 +2,7 @@ import rateLimit from 'express-rate-limit';
 import { Router } from 'express';
 import { authenticateMiddleware } from '../../../middlewares/authenticate/index.js';
 import { requireGuardianMiddleware } from '../../../middlewares/require-guardian/index.js';
+import { requireTeacherMiddleware } from '../../../middlewares/require-teacher/index.js';
 import { controllerHandler } from '../../../shared/http/index.js';
 import { validateBody } from '../../../shared/validation/index.js';
 import {
@@ -9,6 +10,10 @@ import {
   changeGuardianPasswordController,
   confirmPasswordResetController,
   guardianLoginController,
+  teacherLoginController,
+  teacherRefreshController,
+  changeTeacherPasswordController,
+  changeTeacherRequiredPasswordController,
   logoutController,
   refreshController,
   requestPasswordResetController,
@@ -17,6 +22,7 @@ import {
 } from '../controllers/index.js';
 import {
   guardianLoginSchema,
+  teacherLoginSchema,
   guardianCurrentPasswordChangeSchema,
   logoutSchema,
   passwordChangeSchema,
@@ -28,6 +34,7 @@ import {
 } from '../validations/index.js';
 
 export const authRouter = Router();
+export const teacherAuthRouter = Router();
 
 const rateLimitHandler = (_request: unknown, response: {
   locals: { requestId?: unknown };
@@ -71,6 +78,46 @@ authRouter.post(
   loginRateLimit,
   validateBody(guardianLoginSchema),
   controllerHandler(guardianLoginController),
+);
+
+const teacherLoginRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  skipSuccessfulRequests: true,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+teacherAuthRouter.post(
+  '/login',
+  teacherLoginRateLimit,
+  validateBody(teacherLoginSchema),
+  controllerHandler(teacherLoginController),
+);
+teacherAuthRouter.post(
+  '/refresh',
+  validateBody(refreshSchema),
+  controllerHandler(teacherRefreshController),
+);
+teacherAuthRouter.post(
+  '/password/change',
+  validateBody(passwordChangeSchema),
+  controllerHandler(changeTeacherRequiredPasswordController),
+);
+teacherAuthRouter.post(
+  '/password/change-current',
+  authenticateMiddleware,
+  requireTeacherMiddleware,
+  validateBody(guardianCurrentPasswordChangeSchema),
+  controllerHandler(changeTeacherPasswordController),
+);
+teacherAuthRouter.post(
+  '/logout',
+  authenticateMiddleware,
+  requireTeacherMiddleware,
+  validateBody(logoutSchema),
+  controllerHandler(logoutController),
 );
 authRouter.post(
   '/password/change-current',

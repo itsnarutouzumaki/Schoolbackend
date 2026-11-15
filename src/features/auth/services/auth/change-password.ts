@@ -7,6 +7,7 @@ export async function changeRequiredPassword(input: {
   schoolId: string;
   token: string;
   newPassword: string;
+  expectedRole?: 'guardian' | 'teacher' | 'schoolAdmin';
 }): Promise<void> {
   let claims;
   try {
@@ -31,6 +32,7 @@ export async function changeRequiredPassword(input: {
     || user.status !== 'active'
     || !user.mustChangePassword
     || user.authVersion !== claims.authVersion
+    || (input.expectedRole && claims.role !== input.expectedRole)
   ) {
     throw new ApiError(401, 'PASSWORD_CHANGE_TOKEN_INVALID', 'The password-change session is invalid or expired.');
   }

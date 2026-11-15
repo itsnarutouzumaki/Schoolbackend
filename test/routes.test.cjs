@@ -35,6 +35,14 @@ test('health and OpenAPI endpoints are registered centrally', async () => {
   assert.equal(specification.openapi, '3.0.3');
   assert.equal(specification.paths['/api/v1/admin/test-data/import'], undefined);
   assert.equal(specification.components.securitySchemes.testDataImportKey, undefined);
+  assert.ok(specification.paths['/api/v1/teacher/auth/login']);
+  assert.ok(specification.paths['/api/v1/teacher/auth/refresh']);
+  assert.ok(specification.paths['/api/v1/teacher/auth/logout']);
+  assert.ok(specification.paths['/api/v1/teacher/auth/password/change']);
+  assert.ok(specification.paths['/api/v1/teacher/auth/password/change-current']);
+  assert.ok(specification.paths['/api/v1/teacher/bootstrap']);
+  assert.ok(specification.paths['/api/v1/teacher/classes/{classSectionId}/students']);
+  assert.ok(specification.paths['/api/v1/teacher/students']);
   assert.ok(specification.paths['/api/v1/guardian/auth/login']);
   assert.ok(specification.paths['/api/v1/guardian/auth/password-reset/confirmations']);
   assert.ok(specification.paths['/api/v1/guardian/auth/password/change-current']);

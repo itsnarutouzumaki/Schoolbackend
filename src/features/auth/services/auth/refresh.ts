@@ -12,10 +12,15 @@ import { createRefreshToken, issueAccessToken } from '../tokens/index.js';
 export async function refreshSession(input: {
   schoolId: string;
   refreshToken: string;
+  appAudience?: 'guardian' | 'teacher' | 'schoolAdmin';
 }) {
   const now = new Date();
   const session = await findRefreshSessionByToken(input.refreshToken);
-  if (!session || session.schoolId.toString() !== input.schoolId) {
+  if (
+    !session
+    || session.schoolId.toString() !== input.schoolId
+    || (input.appAudience && session.appAudience !== input.appAudience)
+  ) {
     throw new ApiError(401, 'SESSION_EXPIRED', 'The refresh session is invalid or expired.');
   }
 

@@ -1,6 +1,7 @@
 export {
   guardianCurrentPasswordChangeSchema,
   guardianLoginSchema,
+  teacherLoginSchema,
   loginSchema,
   logoutSchema,
   passwordChangeSchema,
@@ -13,6 +14,7 @@ export {
 export type {
   GuardianCurrentPasswordChangeInput,
   GuardianLoginInput,
+  TeacherLoginInput,
   LoginInput,
   LogoutInput,
   PasswordChangeInput,

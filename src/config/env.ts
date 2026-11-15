@@ -9,6 +9,8 @@ const envSchema = z.object({
   GCS_BUCKET_NAME: z.string().min(3).optional(),
   GCS_PROJECT_ID: z.string().min(1).optional(),
   GCS_SIGNED_URL_TTL_SECONDS: z.coerce.number().int().min(60).max(900).default(300),
+  FIREBASE_PROJECT_ID: z.string().min(1).optional(),
+  DEVICE_TOKEN_ENCRYPTION_KEY: z.string().optional(),
   JWT_SECRET: z.string()
     .refine(secret => Buffer.byteLength(secret, 'utf8') >= 32, 'JWT_SECRET must be at least 32 bytes.')
     .optional(),

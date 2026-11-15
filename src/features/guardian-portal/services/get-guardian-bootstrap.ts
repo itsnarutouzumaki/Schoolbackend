@@ -14,8 +14,7 @@ import {
 import { NotificationModel } from '../../notifications/models/index.js';
 import { SchoolModel } from '../../tenant/models/index.js';
 import { UserModel } from '../../auth/models/index.js';
-import { FileRecordModel } from '../../files/models/index.js';
-import { createSignedDownloadUrl } from '../../files/storage/index.js';
+import { getProfilePhotoUrls } from '../../files/services/index.js';
 import { ApiError } from '../../../shared/errors/index.js';
 
 export async function getGuardianBootstrap(input: {
@@ -45,7 +44,7 @@ export async function getGuardianBootstrap(input: {
       ChildLinkRequestModel.find().where({ schoolId, guardianId: guardian._id })
         .select('proposedStudentNumber proposedStudentName relationship status createdAt reviewedAt reviewNote').sort({ createdAt: -1 }).lean(),
       NotificationModel.find().where({ schoolId, recipientUserId: userId, targetAudience: 'guardian' })
-        .select('eventId eventType subject body routeName routeParams readAt createdAt').sort({ createdAt: -1 }).limit(200).lean(),
+        .select('eventId eventType subject description body senderName senderRole senderRoleLabel attachmentFileId routeName routeParams readAt createdAt').sort({ createdAt: -1 }).limit(200).lean(),
     ]);
 
   const studentIds = links.map(link => link.studentId);
@@ -78,29 +77,11 @@ export async function getGuardianBootstrap(input: {
       .select('assessmentId studentId obtainedMarks maxMarks remarks answerCopyFileId').lean(),
   ]);
 
-  const photoFileIds = [
+  const photoUrls = await getProfilePhotoUrls(input.schoolId, [
     guardian.photoFileId,
     ...students.map(student => student.photoFileId),
     ...teachers.map(teacher => teacher.photoFileId),
-  ].filter((fileId): fileId is Types.ObjectId => Boolean(fileId));
-  const photoFiles = photoFileIds.length
-    ? await FileRecordModel.find({
-      schoolId,
-      _id: { $in: [...new Set(photoFileIds.map(fileId => fileId.toString()))] },
-      purpose: 'profile-photo',
-      status: 'ready',
-    }).select('+storageRef +storageGeneration').lean()
-    : [];
-  const photoUrlEntries = await Promise.all(photoFiles.map(async file => {
-    if (!file.storageRef || !file.storageGeneration) return null;
-    return [
-      file._id.toString(),
-      await createSignedDownloadUrl(file.storageRef, file.storageGeneration),
-    ] as const;
-  }));
-  const photoUrls = new Map(photoUrlEntries.filter(
-    (entry): entry is readonly [string, string] => entry !== null,
-  ));
+  ]);
 
   return {
     school: school ? {
@@ -172,6 +153,13 @@ export async function getGuardianBootstrap(input: {
       ...request,
       proposedStudentNumber: compactStudentNumber(request.proposedStudentNumber),
     })),
-    notifications,
+    notifications: notifications.map(notification => ({
+      ...notification,
+      body: notification.description ?? notification.body ?? '',
+      senderName: notification.senderName ?? 'School administration',
+      senderRole: notification.senderRole ?? 'schoolAdmin',
+      senderRoleLabel: notification.senderRoleLabel ?? 'Admin',
+      attachmentFileId: notification.attachmentFileId?.toString(),
+    })),
   };
 }

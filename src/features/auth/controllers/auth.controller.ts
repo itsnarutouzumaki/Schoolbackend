@@ -5,6 +5,7 @@ import { requireAuthContext, requireTenantContext } from '../../../shared/http/i
 import { ApiError } from '../../../shared/errors/index.js';
 import { changeRequiredPassword } from '../services/auth/change-password.js';
 import { changeGuardianPassword } from '../services/auth/change-guardian-password.js';
+import { changeTeacherPassword } from '../services/auth/change-teacher-password.js';
 import { confirmGuardianPasswordReset } from '../services/auth/confirm-password-reset.js';
 import { login } from '../services/auth/login.js';
 import { logout } from '../services/auth/logout.js';
@@ -21,6 +22,7 @@ import type {
   RefreshInput,
   RequestSignupCodeInput,
   SignupInput,
+  TeacherLoginInput,
 } from '../validations/index.js';
 
 type Controller<TBody, TData> = TypedController<
@@ -44,12 +46,38 @@ export const guardianLoginController: Controller<
   response.status(200).json({ data: result });
 };
 
+export const teacherLoginController: Controller<
+  TeacherLoginInput,
+  Awaited<ReturnType<typeof login>>
+> = async (request, response) => {
+  const tenant = requireTenantContext(response.locals);
+  const result = await login({
+    ...request.body,
+    appAudience: 'teacher',
+    schoolId: tenant.schoolId,
+  });
+  response.status(200).json({ data: result });
+};
+
 export const refreshController: Controller<RefreshInput, Awaited<ReturnType<typeof refreshSession>>> = async (
   request,
   response,
 ) => {
   const tenant = requireTenantContext(response.locals);
   const result = await refreshSession({ ...request.body, schoolId: tenant.schoolId });
+  response.status(200).json({ data: result });
+};
+
+export const teacherRefreshController: Controller<RefreshInput, Awaited<ReturnType<typeof refreshSession>>> = async (
+  request,
+  response,
+) => {
+  const tenant = requireTenantContext(response.locals);
+  const result = await refreshSession({
+    ...request.body,
+    schoolId: tenant.schoolId,
+    appAudience: 'teacher',
+  });
   response.status(200).json({ data: result });
 };
 
@@ -117,6 +145,28 @@ export const changePasswordController: TypedController<
     schoolId: tenant.schoolId,
     token: authorization.slice('Bearer '.length).trim(),
     newPassword: request.body.newPassword,
+    expectedRole: 'guardian',
+  });
+  response.status(204).end();
+};
+
+export const changeTeacherRequiredPasswordController: TypedController<
+  ParamsDictionary,
+  never,
+  PasswordChangeInput,
+  ParsedQs,
+  RequestLocals
+> = async (request, response) => {
+  const tenant = requireTenantContext(response.locals);
+  const authorization = request.get('Authorization');
+  if (!authorization?.startsWith('Bearer ')) {
+    throw new ApiError(401, 'UNAUTHENTICATED', 'Password-change authorization is required.');
+  }
+  await changeRequiredPassword({
+    schoolId: tenant.schoolId,
+    token: authorization.slice('Bearer '.length).trim(),
+    newPassword: request.body.newPassword,
+    expectedRole: 'teacher',
   });
   response.status(204).end();
 };
@@ -130,6 +180,22 @@ export const changeGuardianPasswordController: TypedController<
 > = async (request, response) => {
   const auth = requireAuthContext(response.locals);
   await changeGuardianPassword({
+    schoolId: auth.schoolId,
+    userId: auth.userId,
+    ...request.body,
+  });
+  response.status(204).end();
+};
+
+export const changeTeacherPasswordController: TypedController<
+  ParamsDictionary,
+  ApiSuccessResponse<never>,
+  { currentPassword: string; newPassword: string },
+  ParsedQs,
+  RequestLocals
+> = async (request, response) => {
+  const auth = requireAuthContext(response.locals);
+  await changeTeacherPassword({
     schoolId: auth.schoolId,
     userId: auth.userId,
     ...request.body,

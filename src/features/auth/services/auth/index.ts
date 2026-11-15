@@ -7,3 +7,4 @@ export { registerGuardian } from './register-guardian.js';
 export { requestGuardianPasswordReset } from './request-password-reset.js';
 export { requestGuardianSignupCode } from './request-signup-code.js';
 export { changeGuardianPassword } from './change-guardian-password.js';
+export { changeTeacherPassword } from './change-teacher-password.js';

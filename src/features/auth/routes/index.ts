@@ -1,1 +1,1 @@
-export { authRouter } from './auth.routes.js';
+export { authRouter, teacherAuthRouter } from './auth.routes.js';

@@ -6,7 +6,17 @@ const notificationSchema = new Schema({
   eventId: { type: String, required: [true, "Event ID is required."], trim: true },
   eventType: { type: String, required: [true, "Event type is required."], trim: true },
   subject: { type: String, required: [true, "Subject is required."], trim: true, maxlength: [160, "Subject must be 160 characters or fewer."] },
-  body: { type: String, required: [true, "Body is required."], trim: true, maxlength: [2000, "Body must be 2000 characters or fewer."] },
+  description: { type: String, trim: true, maxlength: [2000, "Description must be 2000 characters or fewer."] },
+  body: { type: String, trim: true, maxlength: [2000, "Body must be 2000 characters or fewer."] },
+  senderUserId: { type: Schema.Types.ObjectId, ref: 'User', default: undefined },
+  senderRole: {
+    type: String,
+    enum: { values: ['guardian', 'teacher', 'schoolAdmin'], message: "Sender role must be a valid option." },
+    default: undefined,
+  },
+  senderName: { type: String, trim: true, maxlength: [160, "Sender name must be 160 characters or fewer."], default: undefined },
+  senderRoleLabel: { type: String, trim: true, maxlength: [80, "Sender role label must be 80 characters or fewer."], default: undefined },
+  attachmentFileId: { type: Schema.Types.ObjectId, ref: 'FileRecord', default: undefined },
   routeName: { type: String, trim: true, default: undefined },
   routeParams: {
     type: Map,

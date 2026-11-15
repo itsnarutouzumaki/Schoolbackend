@@ -7,14 +7,15 @@ export const openApiDocument: OpenAPIV3.Document = {
     version: '1.0.0',
     description: [
       'Shared multi-school API for the Parent and Teacher applications.',
-      'Health, tenant resolution, guardian authentication, guardian data, guardian submissions, and private Google Cloud Storage file flows are active.',
+      'Health, tenant resolution, Guardian APIs, Teacher authentication/data reads, and private Google Cloud Storage flows are active.',
     ].join('\n\n'),
   },
   servers: [{ url: '/' }],
   tags: [
     { name: 'Health', description: 'Process liveness and dependency readiness.' },
-    { name: 'Authentication', description: 'School-scoped sign-in, session, and guardian recovery flows.' },
+    { name: 'Authentication', description: 'School-scoped Guardian and Teacher sign-in and session flows.' },
     { name: 'Guardian data', description: 'Authenticated guardian profile, child records, and request histories.' },
+    { name: 'Teacher data', description: 'Authenticated Teacher bootstrap, assigned class rosters, and student lookup.' },
   ],
   components: {
     parameters: {
@@ -99,6 +100,78 @@ export const openApiDocument: OpenAPIV3.Document = {
           newPassword: { type: 'string', minLength: 8, maxLength: 72 },
         },
       },
+      TeacherBootstrap: {
+        type: 'object',
+        required: ['teacher', 'academicYear', 'classSections'],
+        properties: {
+          teacher: {
+            type: 'object',
+            description: 'Safe Teacher profile fields; excludes private contact and employment data.',
+            required: ['id', 'displayName', 'subjects', 'qualifications', 'languages', 'phone', 'email'],
+            properties: {
+              id: { type: 'string' },
+              displayName: { type: 'string' },
+              designation: { type: 'string' },
+              subjects: { type: 'array', items: { type: 'string' } },
+              qualifications: { type: 'array', items: { type: 'string' } },
+              experienceYears: { type: 'number' },
+              specialization: { type: 'string' },
+              biography: { type: 'string' },
+              languages: { type: 'array', items: { type: 'string' } },
+              photoUrl: { type: 'string', format: 'uri' },
+              phone: { type: 'string' },
+              email: { type: 'string' },
+            },
+          },
+          academicYear: {
+            type: 'object',
+            nullable: true,
+            required: ['id', 'label'],
+            properties: { id: { type: 'string' }, label: { type: 'string' } },
+          },
+          classSections: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['id', 'academicYearId', 'className', 'section', 'subjects'],
+              properties: {
+                id: { type: 'string' },
+                academicYearId: { type: 'string' },
+                className: { type: 'string' },
+                section: { type: 'string' },
+                subjects: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['id', 'name'],
+                    properties: { id: { type: 'string' }, name: { type: 'string' } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      TeacherStudent: {
+        type: 'object',
+        required: ['id', 'studentNumber', 'fullName'],
+        properties: {
+          id: { type: 'string' },
+          studentNumber: { type: 'string', description: 'Compact display form of the canonical school student number.' },
+          fullName: { type: 'string' },
+          rollNumber: { type: 'string' },
+          photoUrl: { type: 'string', format: 'uri' },
+          classSection: {
+            type: 'object',
+            required: ['id', 'className', 'section'],
+            properties: {
+              id: { type: 'string' },
+              className: { type: 'string' },
+              section: { type: 'string' },
+            },
+          },
+        },
+      },
     },
   },
   paths: {
@@ -172,6 +245,234 @@ export const openApiDocument: OpenAPIV3.Document = {
               },
             },
           },
+        },
+      },
+    },
+    '/api/v1/teacher/bootstrap': {
+      get: {
+        tags: ['Teacher data'],
+        summary: 'Load the authenticated Teacher profile and assigned current-year class sections',
+        operationId: 'getTeacherBootstrap',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Teacher profile, active academic year, and current assignments.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['data'],
+                  properties: { data: { $ref: '#/components/schemas/TeacherBootstrap' } },
+                },
+              },
+            },
+          },
+          '401': { description: 'Authentication is required.' },
+          '403': { description: 'A valid active Teacher profile is required.' },
+        },
+      },
+    },
+    '/api/v1/teacher/classes/{classSectionId}/students': {
+      get: {
+        tags: ['Teacher data'],
+        summary: 'List active students in an assigned class section',
+        operationId: 'getTeacherClassStudents',
+        parameters: [
+          { $ref: '#/components/parameters/SchoolCode' },
+          {
+            name: 'classSectionId',
+            in: 'path',
+            required: true,
+            schema: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
+          },
+        ],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Authorized class section and its active student roster.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['data'],
+                  properties: {
+                    data: {
+                      type: 'object',
+                      required: ['classSection', 'students'],
+                      properties: {
+                        classSection: {
+                          type: 'object',
+                          required: ['id', 'className', 'section'],
+                          properties: {
+                            id: { type: 'string' },
+                            className: { type: 'string' },
+                            section: { type: 'string' },
+                          },
+                        },
+                        students: { type: 'array', items: { $ref: '#/components/schemas/TeacherStudent' } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '401': { description: 'Authentication is required.' },
+          '403': { description: 'This endpoint is available to Teacher accounts only.' },
+          '404': { description: 'The class section is unavailable to this Teacher.' },
+        },
+      },
+    },
+    '/api/v1/teacher/students': {
+      get: {
+        tags: ['Teacher data'],
+        summary: 'Find one student by student number within the Teacher assignment scope',
+        operationId: 'findTeacherStudent',
+        parameters: [
+          { $ref: '#/components/parameters/SchoolCode' },
+          {
+            name: 'studentNumber',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', minLength: 1, maxLength: 7 },
+            description: 'Canonical or compact student number; exact match only.',
+          },
+        ],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': {
+            description: 'Student summary and assigned class-section identity.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['data'],
+                  properties: { data: { $ref: '#/components/schemas/TeacherStudent' } },
+                },
+              },
+            },
+          },
+          '400': { description: 'The student number is invalid.' },
+          '401': { description: 'Authentication is required.' },
+          '403': { description: 'This endpoint is available to Teacher accounts only.' },
+          '404': { description: 'The student was not found or is outside the Teacher assignment scope.' },
+        },
+      },
+    },
+    '/api/v1/teacher/auth/login': {
+      post: {
+        tags: ['Authentication'],
+        summary: 'Sign in to a Teacher account',
+        operationId: 'teacherLogin',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/GuardianLoginRequest' } } },
+        },
+        responses: {
+          '200': { description: 'Teacher session issued, or a required temporary-password change was issued.' },
+          '401': { description: 'The credentials are invalid.' },
+          '429': { description: 'Too many login attempts.' },
+        },
+      },
+    },
+    '/api/v1/teacher/auth/refresh': {
+      post: {
+        tags: ['Authentication'],
+        summary: 'Rotate a Teacher refresh token',
+        operationId: 'refreshTeacherSession',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/RefreshRequest' } } },
+        },
+        responses: {
+          '200': { description: 'Teacher refresh token rotated successfully.' },
+          '401': { description: 'The refresh token is invalid, expired, or belongs to another app audience.' },
+        },
+      },
+    },
+    '/api/v1/teacher/auth/logout': {
+      post: {
+        tags: ['Authentication'],
+        summary: 'Revoke the current Teacher session',
+        operationId: 'logoutTeacher',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                properties: { allDevices: { type: 'boolean', default: false } },
+              },
+            },
+          },
+        },
+        responses: {
+          '204': { description: 'Teacher session revoked.' },
+          '401': { description: 'Authentication is required.' },
+          '403': { description: 'This endpoint is available to Teacher accounts only.' },
+        },
+      },
+    },
+    '/api/v1/teacher/auth/password/change': {
+      post: {
+        tags: ['Authentication'],
+        summary: 'Complete an administrator-required Teacher password change',
+        operationId: 'changeRequiredTeacherPassword',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['newPassword'],
+                properties: { newPassword: { type: 'string', minLength: 8, maxLength: 72, writeOnly: true } },
+              },
+            },
+          },
+        },
+        responses: {
+          '204': { description: 'Password changed; sign in again for normal access.' },
+          '400': { description: 'The new password is invalid.' },
+          '401': { description: 'The password-change token is invalid or expired.' },
+        },
+      },
+    },
+    '/api/v1/teacher/auth/password/change-current': {
+      post: {
+        tags: ['Authentication'],
+        summary: 'Change the authenticated Teacher password',
+        operationId: 'changeTeacherPassword',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['currentPassword', 'newPassword'],
+                properties: {
+                  currentPassword: { type: 'string', minLength: 8, maxLength: 72, writeOnly: true },
+                  newPassword: { type: 'string', minLength: 8, maxLength: 72, writeOnly: true },
+                },
+              },
+              },
+          },
+        },
+        responses: {
+          '204': { description: 'Password changed and existing sessions revoked.' },
+          '401': { description: 'The current password is invalid or the session has expired.' },
+          '403': { description: 'This endpoint is available to Teacher accounts only.' },
         },
       },
     },
@@ -602,6 +903,112 @@ export const openApiDocument: OpenAPIV3.Document = {
         ],
         security: [{ bearerAuth: [] }],
         responses: { '200': { description: 'The notification was marked read.' } },
+      },
+    },
+    '/api/v1/notifications': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'List notifications for the authenticated Parent or Teacher',
+        operationId: 'getNotifications',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        responses: { '200': { description: 'Notification summaries, newest first.' } },
+      },
+    },
+    '/api/v1/notifications/read-all': {
+      patch: {
+        tags: ['Notifications'],
+        summary: 'Mark all notifications for the authenticated user as read',
+        operationId: 'markAllNotificationsRead',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        responses: { '200': { description: 'The number of updated notifications.' } },
+      },
+    },
+    '/api/v1/notifications/devices': {
+      post: {
+        tags: ['Notifications'],
+        summary: 'Register or refresh an FCM device token for the authenticated app audience',
+        operationId: 'registerNotificationDevice',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['token', 'platform'],
+                properties: {
+                  token: { type: 'string', minLength: 1, maxLength: 4096 },
+                  platform: { type: 'string', enum: ['android', 'ios'] },
+                },
+              },
+            },
+          },
+        },
+        responses: { '200': { description: 'The device token is encrypted and registered.' } },
+      },
+      delete: {
+        tags: ['Notifications'],
+        summary: 'Revoke an FCM device token for the authenticated user',
+        operationId: 'unregisterNotificationDevice',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['token'],
+                properties: { token: { type: 'string', minLength: 1, maxLength: 4096 } },
+              },
+            },
+          },
+        },
+        responses: { '200': { description: 'The device token is revoked.' } },
+      },
+    },
+    '/api/v1/notifications/{eventId}': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Get notification details for the authenticated recipient',
+        operationId: 'getNotificationDetails',
+        parameters: [
+          { $ref: '#/components/parameters/SchoolCode' },
+          { name: 'eventId', in: 'path', required: true, schema: { type: 'string', maxLength: 160 } },
+        ],
+        security: [{ bearerAuth: [] }],
+        responses: { '200': { description: 'Sender, subject, complete description, and optional attachment metadata.' } },
+      },
+    },
+    '/api/v1/notifications/{eventId}/read': {
+      patch: {
+        tags: ['Notifications'],
+        summary: 'Mark one notification as read for the authenticated recipient',
+        operationId: 'markNotificationRead',
+        parameters: [
+          { $ref: '#/components/parameters/SchoolCode' },
+          { name: 'eventId', in: 'path', required: true, schema: { type: 'string', maxLength: 160 } },
+        ],
+        security: [{ bearerAuth: [] }],
+        responses: { '200': { description: 'The notification read timestamp.' } },
+      },
+    },
+    '/api/v1/notifications/{eventId}/attachment': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Create a short-lived signed URL for this notification attachment',
+        operationId: 'getNotificationAttachment',
+        parameters: [
+          { $ref: '#/components/parameters/SchoolCode' },
+          { name: 'eventId', in: 'path', required: true, schema: { type: 'string', maxLength: 160 } },
+        ],
+        security: [{ bearerAuth: [] }],
+        responses: { '200': { description: 'A short-lived private GCS download URL.' } },
       },
     },
     '/api/v1/guardian/files/upload-intents': {

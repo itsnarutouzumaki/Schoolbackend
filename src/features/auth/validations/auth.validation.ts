@@ -20,6 +20,10 @@ export const guardianLoginSchema = z.object({
   phone: phoneSchema,
   password: passwordSchema,
 }).strict();
+export const teacherLoginSchema = z.object({
+  phone: phoneSchema,
+  password: passwordSchema,
+}).strict();
 
 export const passwordChangeSchema = z.object({
   newPassword: passwordSchema,
@@ -63,6 +67,7 @@ export const passwordResetConfirmationSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type GuardianLoginInput = z.infer<typeof guardianLoginSchema>;
+export type TeacherLoginInput = z.infer<typeof teacherLoginSchema>;
 export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;
 export type GuardianCurrentPasswordChangeInput = z.infer<typeof guardianCurrentPasswordChangeSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
