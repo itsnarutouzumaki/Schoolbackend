@@ -6,7 +6,7 @@ import { openApiDocument } from '../docs/index.js';
 import { authRouter, teacherAuthRouter } from '../features/auth/index.js';
 import { guardianPortalRouter } from '../features/guardian-portal/index.js';
 import { teacherPortalRouter } from '../features/teacher-portal/index.js';
-import { notificationsRouter, testNotificationRouter } from '../features/notifications/index.js';
+import { notificationsRouter } from '../features/notifications/index.js';
 import { resolveTenantMiddleware } from '../middlewares/index.js';
 import { healthRouter } from './health.js';
 
@@ -17,7 +17,6 @@ apiV1Router.use('/guardian/auth', authRouter);
 apiV1Router.use('/teacher/auth', teacherAuthRouter);
 apiV1Router.use('/teacher', teacherPortalRouter);
 apiV1Router.use('/guardian', guardianPortalRouter);
-apiV1Router.use('/notifications', testNotificationRouter);
 apiV1Router.use('/notifications', notificationsRouter);
 
 export function registerRoutes(app: Express): void {

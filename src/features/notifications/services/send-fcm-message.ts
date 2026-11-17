@@ -43,35 +43,11 @@ function getProviderError(payload: unknown) {
 
 export async function sendFcmMessage(message: Record<string, unknown>) {
   const auth = getGoogleAuth();
-  let projectId: string;
-  let client: Awaited<ReturnType<GoogleAuth['getClient']>>;
-  let token: string | null | undefined;
-  try {
-    [projectId, client] = await Promise.all([auth.getProjectId(), auth.getClient()]);
-    token = (await client.getAccessToken()).token;
-  } catch (error) {
-    // TEMP NOTIFICATION DEBUG: do not log access tokens or credential contents.
-    console.error('[TEMP-NOTIFICATION-DEBUG] fcm.credentials-unavailable', {
-      firebaseProjectIdConfigured: Boolean(env.FIREBASE_PROJECT_ID),
-      errorName: error instanceof Error ? error.name : 'UnknownError',
-      errorMessage: error instanceof Error ? error.message : 'Unknown credential error.',
-    });
-    throw error;
-  }
+  const [projectId, client] = await Promise.all([auth.getProjectId(), auth.getClient()]);
+  const token = (await client.getAccessToken()).token;
   if (!projectId || !token) {
-    // TEMP NOTIFICATION DEBUG: do not log access tokens or credential contents.
-    console.error('[TEMP-NOTIFICATION-DEBUG] fcm.credentials-incomplete', {
-      projectIdResolved: Boolean(projectId),
-      accessTokenResolved: Boolean(token),
-      firebaseProjectIdConfigured: Boolean(env.FIREBASE_PROJECT_ID),
-    });
     throw new Error('Firebase project credentials could not be resolved from Application Default Credentials.');
   }
-  // TEMP NOTIFICATION DEBUG: remove after push-delivery diagnosis.
-  console.info('[TEMP-NOTIFICATION-DEBUG] fcm.credentials-ready', {
-    projectId,
-    accessTokenResolved: Boolean(token),
-  });
 
   const response = await fetch(
     `https://fcm.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/messages:send`,
@@ -86,10 +62,6 @@ export async function sendFcmMessage(message: Record<string, unknown>) {
     },
   );
   if (response.ok) {
-    // TEMP NOTIFICATION DEBUG: remove after push-delivery diagnosis.
-    console.info('[TEMP-NOTIFICATION-DEBUG] fcm.provider-accepted', {
-      httpStatus: response.status,
-    });
     return;
   }
 
@@ -101,12 +73,6 @@ export async function sendFcmMessage(message: Record<string, unknown>) {
     payload = undefined;
   }
   const providerError = getProviderError(payload);
-  // TEMP NOTIFICATION DEBUG: provider response contains no device-token value.
-  console.error('[TEMP-NOTIFICATION-DEBUG] fcm.provider-rejected', {
-    httpStatus: response.status,
-    providerCode: providerError.code,
-    providerMessage: providerError.message,
-  });
   throw new FcmDeliveryError(
     providerError.message,
     providerError.code,

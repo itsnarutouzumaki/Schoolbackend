@@ -116,26 +116,10 @@ export const registerNotificationDeviceController: TypedController<
   RequestLocals
 > = async (request, response) => {
   const recipient = getRecipientContext(response.locals);
-  // TEMP NOTIFICATION DEBUG: remove after push-delivery diagnosis; never log the token itself.
-  console.info('[TEMP-NOTIFICATION-DEBUG] device-register.request', {
-    requestId: response.locals.requestId,
-    userId: recipient.userId,
-    role: recipient.role,
-    platform: request.body.platform,
-    tokenPresent: Boolean(request.body.token),
-    tokenLength: request.body.token.length,
-  });
   await registerNotificationDevice({
     ...recipient,
     platform: request.body.platform,
     token: request.body.token,
-  });
-  // TEMP NOTIFICATION DEBUG: remove after push-delivery diagnosis.
-  console.info('[TEMP-NOTIFICATION-DEBUG] device-register.succeeded', {
-    requestId: response.locals.requestId,
-    userId: recipient.userId,
-    role: recipient.role,
-    platform: request.body.platform,
   });
   response.status(200).json({ data: { registered: true } });
 };
