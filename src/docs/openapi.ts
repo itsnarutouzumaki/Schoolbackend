@@ -106,8 +106,8 @@ export const openApiDocument: OpenAPIV3.Document = {
         properties: {
           teacher: {
             type: 'object',
-            description: 'Safe Teacher profile fields; excludes private contact and employment data.',
-            required: ['id', 'displayName', 'subjects', 'qualifications', 'languages', 'phone', 'email'],
+            description: 'Teacher profile, editable address and awards, and read-only login contact values.',
+            required: ['id', 'displayName', 'subjects', 'qualifications', 'languages', 'phone', 'email', 'address', 'awards'],
             properties: {
               id: { type: 'string' },
               displayName: { type: 'string' },
@@ -121,6 +121,8 @@ export const openApiDocument: OpenAPIV3.Document = {
               photoUrl: { type: 'string', format: 'uri' },
               phone: { type: 'string' },
               email: { type: 'string' },
+              address: { type: 'string' },
+              awards: { type: 'array', items: { type: 'string' } },
             },
           },
           academicYear: {
@@ -273,6 +275,88 @@ export const openApiDocument: OpenAPIV3.Document = {
         },
       },
     },
+    '/api/v1/teacher/me': {
+      patch: {
+        tags: ['Teacher data'],
+        summary: 'Update explicitly self-editable Teacher profile fields',
+        operationId: 'updateTeacherProfile',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                minProperties: 1,
+                properties: {
+                  fullName: { type: 'string', minLength: 1, maxLength: 120 },
+                  address: { type: 'string', maxLength: 500 },
+                  awards: {
+                    type: 'array',
+                    maxItems: 20,
+                    items: { type: 'string', minLength: 1, maxLength: 150 },
+                  },
+                  profilePhotoFileId: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'The approved Teacher profile fields were saved.' },
+          '400': { description: 'The request contains unsupported or invalid fields.' },
+          '403': { description: 'An active Teacher profile is required.' },
+        },
+      },
+    },
+    '/api/v1/teacher/profile-photo/upload-intents': {
+      post: {
+        tags: ['Teacher data'],
+        summary: 'Create a private upload intent for the authenticated Teacher profile photo',
+        operationId: 'createTeacherProfilePhotoUploadIntent',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['fileName', 'contentType', 'sizeBytes'],
+                properties: {
+                  fileName: { type: 'string', minLength: 1, maxLength: 255 },
+                  contentType: { type: 'string', enum: ['image/jpeg', 'image/png', 'image/webp'] },
+                  sizeBytes: { type: 'integer', minimum: 1, maximum: 5242880 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'A short-lived private upload policy and pending file ID.' },
+          '400': { description: 'The profile photo type or size is not allowed.' },
+        },
+      },
+    },
+    '/api/v1/teacher/profile-photo/{fileId}/complete': {
+      post: {
+        tags: ['Teacher data'],
+        summary: 'Verify and complete the authenticated Teacher profile photo upload',
+        operationId: 'completeTeacherProfilePhotoUpload',
+        parameters: [
+          { $ref: '#/components/parameters/SchoolCode' },
+          { name: 'fileId', in: 'path', required: true, schema: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' } },
+        ],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'The private profile photo upload is verified and ready to be linked.' },
+          '404': { description: 'The pending Teacher-owned upload was not found.' },
+        },
+      },
+    },
     '/api/v1/teacher/classes/{classSectionId}/students': {
       get: {
         tags: ['Teacher data'],
@@ -357,6 +441,90 @@ export const openApiDocument: OpenAPIV3.Document = {
           '401': { description: 'Authentication is required.' },
           '403': { description: 'This endpoint is available to Teacher accounts only.' },
           '404': { description: 'The student was not found or is outside the Teacher assignment scope.' },
+        },
+      },
+    },
+    '/api/v1/teacher/concerns': {
+      post: {
+        tags: ['Teacher data'],
+        summary: 'Send a concern to School Administration or a student’s guardians',
+        operationId: 'sendTeacherConcern',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['recipient', 'subject', 'description'],
+                properties: {
+                  recipient: { type: 'string', enum: ['schoolAdmin', 'guardian'] },
+                  studentNumber: {
+                    type: 'string',
+                    minLength: 1,
+                    maxLength: 7,
+                    description: 'Required only when recipient is guardian.',
+                  },
+                  subject: { type: 'string', minLength: 1, maxLength: 160 },
+                  description: { type: 'string', minLength: 1, maxLength: 1000 },
+                  attachmentFileId: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'The notification was sent to the active recipient account(s).' },
+          '400': { description: 'The request is invalid or the attachment is unavailable.' },
+          '404': { description: 'The student, guardians or School Administration could not be found.' },
+        },
+      },
+    },
+    '/api/v1/teacher/concern-files/upload-intents': {
+      post: {
+        tags: ['Teacher data'],
+        summary: 'Create a private upload policy for a teacher concern attachment',
+        operationId: 'createTeacherConcernUploadIntent',
+        parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['fileName', 'contentType', 'sizeBytes'],
+                properties: {
+                  fileName: { type: 'string', minLength: 1, maxLength: 255 },
+                  contentType: { type: 'string', enum: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] },
+                  sizeBytes: { type: 'integer', minimum: 1, maximum: 1048576 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '201': { description: 'A short-lived upload policy and pending file ID.' },
+          '400': { description: 'The attachment type or size is not allowed.' },
+        },
+      },
+    },
+    '/api/v1/teacher/concern-files/{fileId}/complete': {
+      post: {
+        tags: ['Teacher data'],
+        summary: 'Verify and complete a teacher concern attachment upload',
+        operationId: 'completeTeacherConcernUpload',
+        parameters: [
+          { $ref: '#/components/parameters/SchoolCode' },
+          { name: 'fileId', in: 'path', required: true, schema: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' } },
+        ],
+        security: [{ bearerAuth: [] }],
+        responses: {
+          '200': { description: 'The attachment is verified and ready to be sent.' },
+          '404': { description: 'The pending teacher-owned upload was not found.' },
         },
       },
     },
@@ -844,8 +1012,8 @@ export const openApiDocument: OpenAPIV3.Document = {
       },
       post: {
         tags: ['Guardian data'],
-        summary: 'Submit a complaint for an approved linked child',
-        operationId: 'createGuardianComplaint',
+        summary: 'Send a concern notification to an active school recipient',
+        operationId: 'sendGuardianConcern',
         parameters: [{ $ref: '#/components/parameters/SchoolCode' }],
         security: [{ bearerAuth: [] }],
         requestBody: {
@@ -855,20 +1023,28 @@ export const openApiDocument: OpenAPIV3.Document = {
               schema: {
                 type: 'object',
                 additionalProperties: false,
-                required: ['childId', 'message'],
+                required: ['recipientUserId', 'recipientRole', 'studentScope', 'subject', 'description'],
                 properties: {
-                  childId: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
-                  subject: { type: 'string', maxLength: 200, default: 'General' },
-                  message: { type: 'string', minLength: 8, maxLength: 1000 },
-                  attachmentFileIds: { type: 'array', maxItems: 1, items: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' } },
+                  recipientUserId: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
+                  recipientRole: { type: 'string', enum: ['teacher', 'schoolAdmin'] },
+                  studentScope: {
+                    oneOf: [
+                      { type: 'string', enum: ['all'] },
+                      { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
+                    ],
+                    description: 'The literal "all" or the ID of one approved linked child.',
+                  },
+                  subject: { type: 'string', minLength: 1, maxLength: 160 },
+                  description: { type: 'string', minLength: 1, maxLength: 1000 },
+                  attachmentFileId: { type: 'string', pattern: '^[a-fA-F0-9]{24}$' },
                 },
               },
             },
           },
         },
         responses: {
-          '201': { description: 'The complaint was submitted.' },
-          '404': { description: 'The child is not linked to this guardian.' },
+          '201': { description: 'A notification was sent to the selected recipient. No complaint record is created.' },
+          '404': { description: 'The recipient or linked child is not available.' },
         },
       },
     },
@@ -1030,7 +1206,12 @@ export const openApiDocument: OpenAPIV3.Document = {
                   purpose: { type: 'string', enum: ['profile-photo', 'complaint-attachment', 'leave-attachment'] },
                   fileName: { type: 'string', minLength: 1, maxLength: 255 },
                   contentType: { type: 'string', enum: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'] },
-                  sizeBytes: { type: 'integer', minimum: 1, maximum: 10485760 },
+                  sizeBytes: {
+                    type: 'integer',
+                    minimum: 1,
+                    maximum: 10485760,
+                    description: 'Maximum 1 MB for complaint-attachment; maximum 10 MB for leave-attachment.',
+                  },
                 },
               },
             },

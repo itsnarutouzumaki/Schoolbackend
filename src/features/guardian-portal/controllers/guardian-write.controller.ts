@@ -11,9 +11,9 @@ import type {
 import { requireAuthContext } from '../../../shared/http/index.js';
 import {
   createChildLinkRequest,
-  createComplaint,
   createLeaveRequest,
   markGuardianNotification,
+  sendGuardianConcern,
   updateGuardianProfile,
 } from '../../guardian-services/services/index.js';
 import {
@@ -49,17 +49,27 @@ const leaveRequestSchema = z.object({
   fileIds: z.array(z.string().regex(/^[a-f\d]{24}$/i)).max(1).default([]),
 }).strict();
 const complaintSchema = z.object({
-  childId: z.string().regex(/^[a-f\d]{24}$/i),
-  subject: z.string().trim().min(1).max(200).default('General'),
-  message: z.string().trim().min(8).max(1000),
-  attachmentFileIds: z.array(z.string().regex(/^[a-f\d]{24}$/i)).max(1).default([]),
+  recipientUserId: z.string().regex(/^[a-f\d]{24}$/i),
+  recipientRole: z.enum(['teacher', 'schoolAdmin']),
+  studentScope: z.union([z.literal('all'), z.string().regex(/^[a-f\d]{24}$/i)]),
+  subject: z.string().trim().min(1).max(160),
+  description: z.string().trim().min(1).max(1000),
+  attachmentFileId: z.string().regex(/^[a-f\d]{24}$/i).optional(),
 }).strict();
 const uploadIntentSchema = z.object({
   purpose: z.enum(['profile-photo', 'complaint-attachment', 'leave-attachment']),
   fileName: z.string().trim().min(1).max(255).refine(name => !/[\\/\u0000-\u001f]/.test(name)),
   contentType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']),
   sizeBytes: z.number().int().positive().max(10 * 1024 * 1024),
-}).strict();
+}).strict().superRefine((value, context) => {
+  if (value.purpose === 'complaint-attachment' && value.sizeBytes > 1024 * 1024) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Complaint attachments must be 1 MB or smaller.',
+      path: ['sizeBytes'],
+    });
+  }
+});
 
 function parseBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const parsed = schema.safeParse(body);
@@ -99,9 +109,9 @@ export const createGuardianLeaveRequestController: Controller = async (request, 
   response.status(201).json({ data });
 };
 
-export const createGuardianComplaintController: Controller = async (request, response) => {
+export const sendGuardianConcernController: Controller = async (request, response) => {
   const auth = requireAuthContext(response.locals);
-  const data = await createComplaint({
+  const data = await sendGuardianConcern({
     ...parseBody(complaintSchema, request.body),
     schoolId: auth.schoolId,
     userId: auth.userId,

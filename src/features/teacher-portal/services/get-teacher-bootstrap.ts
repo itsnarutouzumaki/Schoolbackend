@@ -1,12 +1,27 @@
 import { SubjectModel } from '../../academics/models/index.js';
 import { UserModel } from '../../auth/models/index.js';
 import { getProfilePhotoUrls } from '../../files/services/index.js';
+import { TeacherModel } from '../../people/models/index.js';
 import { getTeacherAssignedSections, getTeacherDataContext } from './teacher-access.js';
 
 export async function getTeacherBootstrap(input: { schoolId: string; userId: string }) {
   const context = await getTeacherDataContext(input);
-  const user = await UserModel.findOne().where({ _id: input.userId, schoolId: context.schoolId })
-    .select('normalizedPhone normalizedEmail').lean();
+  const [user, editableProfile] = await Promise.all([
+    UserModel.findOne().where({ _id: input.userId, schoolId: context.schoolId })
+      .select('normalizedPhone normalizedEmail').lean(),
+    TeacherModel.findOne().where({
+      _id: context.teacher._id,
+      schoolId: context.schoolId,
+      userId: input.userId,
+      status: 'active',
+    }).select('+privateContact +optionalDetails'),
+  ]);
+  const awardsValue: unknown = editableProfile?.get('optionalDetails.awards');
+  const profileAddress: unknown = editableProfile?.get('privateContact.currentAddress.line1');
+  const awards = Array.isArray(awardsValue)
+    ? awardsValue.filter((award): award is string => typeof award === 'string')
+    : [];
+  const address = typeof profileAddress === 'string' ? profileAddress : '';
 
   if (!context.academicYear) {
     const photoUrls = await getProfilePhotoUrls(input.schoolId, [context.teacher.photoFileId]);
@@ -26,6 +41,8 @@ export async function getTeacherBootstrap(input: { schoolId: string; userId: str
           : undefined,
         phone: user?.normalizedPhone ?? '',
         email: user?.normalizedEmail ?? '',
+        address,
+        awards,
       },
       academicYear: null,
       classSections: [],
@@ -66,6 +83,8 @@ export async function getTeacherBootstrap(input: { schoolId: string; userId: str
         : undefined,
       phone: user?.normalizedPhone ?? '',
       email: user?.normalizedEmail ?? '',
+      address,
+      awards,
     },
     academicYear: {
       id: context.academicYear._id.toString(),

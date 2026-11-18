@@ -10,12 +10,14 @@ const imageTypes = ['image/jpeg', 'image/png', 'image/webp'];
 const attachmentTypes = [...imageTypes, 'application/pdf'];
 const maxImageBytes = 5 * 1024 * 1024;
 const maxAttachmentBytes = 10 * 1024 * 1024;
+const maxComplaintAttachmentBytes = 1024 * 1024;
 
 export type GuardianFilePurpose = 'profile-photo' | 'complaint-attachment' | 'leave-attachment';
 
 type CreateGuardianUploadIntentInput = {
   schoolId: string;
   userId: string;
+  ownerType?: 'guardians' | 'teachers';
   purpose: GuardianFilePurpose;
   fileName: string;
   contentType: string;
@@ -24,7 +26,11 @@ type CreateGuardianUploadIntentInput = {
 
 function validateFile(input: CreateGuardianUploadIntentInput) {
   const allowedTypes = input.purpose === 'profile-photo' ? imageTypes : attachmentTypes;
-  const maxBytes = input.purpose === 'profile-photo' ? maxImageBytes : maxAttachmentBytes;
+  const maxBytes = input.purpose === 'profile-photo'
+    ? maxImageBytes
+    : input.purpose === 'complaint-attachment'
+      ? maxComplaintAttachmentBytes
+      : maxAttachmentBytes;
   if (!allowedTypes.includes(input.contentType) || input.sizeBytes > maxBytes) {
     throw new ApiError(400, 'FILE_NOT_ALLOWED', 'The file type or size is not allowed for this upload.');
   }
@@ -42,7 +48,7 @@ export async function createGuardianUploadIntent(input: CreateGuardianUploadInte
     throw new ApiError(404, 'SCHOOL_NOT_FOUND', 'The selected school was not found.');
   }
   const fileId = new Types.ObjectId();
-  const storageRef = `schools/${input.schoolId}/guardians/${input.userId}/${randomUUID()}`;
+  const storageRef = `schools/${input.schoolId}/${input.ownerType ?? 'guardians'}/${input.userId}/${randomUUID()}`;
   const uploadExpiresAt = new Date(Date.now() + env.GCS_SIGNED_URL_TTL_SECONDS * 1000);
   const retentionDays = input.purpose === 'profile-photo' ? 3650 : school.fileRetentionDays;
   const file = await FileRecordModel.create({

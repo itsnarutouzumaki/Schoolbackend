@@ -14,10 +14,10 @@ export const requireNotificationAppMiddleware: RequestHandler<
   const auth = response.locals.auth;
   if (
     !auth
-    || (auth.role !== 'guardian' && auth.role !== 'teacher')
+    || (auth.role !== 'guardian' && auth.role !== 'teacher' && auth.role !== 'schoolAdmin')
     || auth.appAudience !== auth.role
   ) {
-    next(new ApiError(403, 'ROLE_FORBIDDEN', 'This endpoint is available to Parent and Teacher accounts only.'));
+    next(new ApiError(403, 'ROLE_FORBIDDEN', 'This endpoint is not available to this account.'));
     return;
   }
   next();

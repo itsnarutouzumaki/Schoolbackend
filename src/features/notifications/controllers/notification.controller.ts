@@ -24,14 +24,22 @@ type AttachmentDownload = Awaited<ReturnType<typeof createNotificationAttachment
 
 function getRecipientContext(locals: RequestLocals) {
   const auth = requireAuthContext(locals);
-  if (auth.role !== 'guardian' && auth.role !== 'teacher') {
-    throw new ApiError(403, 'ROLE_FORBIDDEN', 'This endpoint is available to Parent and Teacher accounts only.');
+  if (auth.role !== 'guardian' && auth.role !== 'teacher' && auth.role !== 'schoolAdmin') {
+    throw new ApiError(403, 'ROLE_FORBIDDEN', 'This endpoint is not available to this account.');
   }
   return {
     schoolId: auth.schoolId,
     userId: auth.userId,
     role: auth.role as NotificationRecipientRole,
   };
+}
+
+function getDeviceRecipientContext(locals: RequestLocals) {
+  const recipient = getRecipientContext(locals);
+  if (recipient.role === 'schoolAdmin') {
+    throw new ApiError(403, 'ROLE_FORBIDDEN', 'School administration accounts cannot register mobile notification devices.');
+  }
+  return recipient;
 }
 
 function requireEventId(value: string) {
@@ -115,7 +123,7 @@ export const registerNotificationDeviceController: TypedController<
   ParsedQs,
   RequestLocals
 > = async (request, response) => {
-  const recipient = getRecipientContext(response.locals);
+  const recipient = getDeviceRecipientContext(response.locals);
   await registerNotificationDevice({
     ...recipient,
     platform: request.body.platform,
@@ -132,7 +140,7 @@ export const unregisterNotificationDeviceController: TypedController<
   RequestLocals
 > = async (request, response) => {
   await unregisterNotificationDevice({
-    ...getRecipientContext(response.locals),
+    ...getDeviceRecipientContext(response.locals),
     token: request.body.token,
   });
   response.status(200).json({ data: { removed: true } });

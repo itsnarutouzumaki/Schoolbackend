@@ -16,6 +16,7 @@ import { SchoolModel } from '../../tenant/models/index.js';
 import { UserModel } from '../../auth/models/index.js';
 import { getProfilePhotoUrls } from '../../files/services/index.js';
 import { ApiError } from '../../../shared/errors/index.js';
+import { getGuardianComplaintRecipients } from './get-guardian-complaint-recipients.js';
 
 export async function getGuardianBootstrap(input: {
   schoolId: string;
@@ -37,8 +38,14 @@ export async function getGuardianBootstrap(input: {
       AcademicYearModel.find().where({ schoolId }).select('label startsOn endsOn status').sort({ startsOn: -1 }).lean(),
       ChildLinkModel.find().where({ schoolId, guardianId: guardian._id, status: 'approved' })
         .select('studentId relationship status').lean(),
-      ComplaintModel.find().where({ schoolId, guardianId: guardian._id })
-        .select('studentId subject message status attachmentFileIds createdAt updatedAt').sort({ createdAt: -1 }).lean(),
+      ComplaintModel.find().where({
+        schoolId,
+        $or: [
+          { senderUserId: userId, senderRole: 'guardian' },
+          { guardianId: guardian._id },
+        ],
+      })
+        .select('subject message status attachmentFileIds createdAt updatedAt').sort({ createdAt: -1 }).lean(),
       LeaveRequestModel.find().where({ schoolId, guardianId: guardian._id })
         .select('studentId startsOn endsOn reason status fileIds createdAt updatedAt').sort({ createdAt: -1 }).lean(),
       ChildLinkRequestModel.find().where({ schoolId, guardianId: guardian._id })
@@ -82,6 +89,9 @@ export async function getGuardianBootstrap(input: {
     ...students.map(student => student.photoFileId),
     ...teachers.map(teacher => teacher.photoFileId),
   ]);
+  const complaintRecipients = await getGuardianComplaintRecipients({
+    schoolId: input.schoolId,
+  });
 
   return {
     school: school ? {
@@ -147,6 +157,7 @@ export async function getGuardianBootstrap(input: {
           : undefined,
       })),
     })),
+    complaintRecipients,
     complaints,
     leaveRequests,
     childLinkRequests: linkRequests.map(request => ({

@@ -104,6 +104,9 @@ async function deliverToRecipient(input: {
   senderRoleLabel: string;
   attachmentFileId?: string;
 }) {
+  if (input.receiverRole === 'schoolAdmin') {
+    return { eventId: input.eventId, pushStatus: 'notRequested' as const, deliveredDevices: 0 };
+  }
   const devices = await DeviceTokenModel.find().where({
     schoolId: input.schoolId,
     userId: input.recipientUserId,
@@ -236,7 +239,7 @@ export async function sendNotification(input: SendNotificationInput) {
     targetAudience: input.receiverRole,
     recipientUserId: receiver._id,
     ...(attachmentFileId ? { attachmentFileId } : {}),
-    pushStatus: 'pending',
+    pushStatus: input.receiverRole === 'schoolAdmin' ? 'notRequested' : 'pending',
   })));
   const delivery = await Promise.all(notificationRecords.map(notification =>
     deliverToRecipient({

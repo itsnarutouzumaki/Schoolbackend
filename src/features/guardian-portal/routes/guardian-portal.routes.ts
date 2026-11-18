@@ -7,7 +7,7 @@ import { controllerHandler } from '../../../shared/http/index.js';
 import {
   completeGuardianUploadController,
   createGuardianChildLinkRequestController,
-  createGuardianComplaintController,
+  sendGuardianConcernController,
   createGuardianDownloadUrlController,
   createGuardianLeaveRequestController,
   createGuardianUploadIntentController,
@@ -48,7 +48,7 @@ guardianPortalRouter.get('/children/:childId/teachers', authenticateMiddleware, 
 guardianPortalRouter.patch('/me', authenticateMiddleware, requireGuardianMiddleware, controllerHandler(updateGuardianProfileController));
 guardianPortalRouter.post('/child-link-requests', authenticateMiddleware, requireGuardianMiddleware, controllerHandler(createGuardianChildLinkRequestController));
 guardianPortalRouter.post('/leave-requests', authenticateMiddleware, requireGuardianMiddleware, controllerHandler(createGuardianLeaveRequestController));
-guardianPortalRouter.post('/complaints', authenticateMiddleware, requireGuardianMiddleware, controllerHandler(createGuardianComplaintController));
+guardianPortalRouter.post('/complaints', authenticateMiddleware, requireGuardianMiddleware, controllerHandler(sendGuardianConcernController));
 guardianPortalRouter.patch('/notifications/read-all', authenticateMiddleware, requireGuardianMiddleware, controllerHandler(markGuardianNotificationController));
 guardianPortalRouter.patch('/notifications/:eventId/read', authenticateMiddleware, requireGuardianMiddleware, controllerHandler(markGuardianNotificationController));
 guardianPortalRouter.post('/files/upload-intents', authenticateMiddleware, requireGuardianMiddleware, controllerHandler(createGuardianUploadIntentController));

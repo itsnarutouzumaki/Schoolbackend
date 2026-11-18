@@ -6,9 +6,15 @@ import { requireTeacherMiddleware } from '../../../middlewares/require-teacher/i
 import { controllerHandler } from '../../../shared/http/index.js';
 import type { ApiErrorResponse, ApiSuccessResponse, RequestLocals } from '../../../shared/http/index.js';
 import {
+  completeTeacherConcernUploadController,
+  completeTeacherProfilePhotoUploadController,
+  createTeacherConcernUploadIntentController,
+  createTeacherProfilePhotoUploadIntentController,
   findTeacherStudentController,
   getTeacherBootstrapController,
   getTeacherClassStudentsController,
+  sendTeacherConcernController,
+  updateTeacherProfileController,
 } from '../controllers/index.js';
 import { findTeacherStudent, getTeacherBootstrap, getTeacherClassStudents } from '../services/index.js';
 
@@ -42,3 +48,10 @@ teacherPortalRouter.get<
   ParsedQs,
   RequestLocals
 >('/students', authenticateMiddleware, requireTeacherMiddleware, controllerHandler(findTeacherStudentController));
+
+teacherPortalRouter.patch('/me', authenticateMiddleware, requireTeacherMiddleware, controllerHandler(updateTeacherProfileController));
+teacherPortalRouter.post('/profile-photo/upload-intents', authenticateMiddleware, requireTeacherMiddleware, controllerHandler(createTeacherProfilePhotoUploadIntentController));
+teacherPortalRouter.post('/profile-photo/:fileId/complete', authenticateMiddleware, requireTeacherMiddleware, controllerHandler(completeTeacherProfilePhotoUploadController));
+teacherPortalRouter.post('/concerns', authenticateMiddleware, requireTeacherMiddleware, controllerHandler(sendTeacherConcernController));
+teacherPortalRouter.post('/concern-files/upload-intents', authenticateMiddleware, requireTeacherMiddleware, controllerHandler(createTeacherConcernUploadIntentController));
+teacherPortalRouter.post('/concern-files/:fileId/complete', authenticateMiddleware, requireTeacherMiddleware, controllerHandler(completeTeacherConcernUploadController));

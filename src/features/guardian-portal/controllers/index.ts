@@ -4,7 +4,7 @@ export type { GuardianReadResource } from './get-guardian-resource.js';
 export {
   completeGuardianUploadController,
   createGuardianChildLinkRequestController,
-  createGuardianComplaintController,
+  sendGuardianConcernController,
   createGuardianDownloadUrlController,
   createGuardianLeaveRequestController,
   createGuardianUploadIntentController,
